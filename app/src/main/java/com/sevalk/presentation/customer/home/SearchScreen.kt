@@ -1,5 +1,10 @@
 package com.sevalk.presentation.customer.home
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.location.Location
+import android.location.LocationManager
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,12 +29,20 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import com.google.android.gms.location.FusedLocationProviderClient
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.sevalk.R
+import kotlin.math.roundToInt
+
 
 data class ServiceProvider(
     val id: String,
@@ -51,8 +64,19 @@ enum class ServiceType(val displayName: String, val icon: ImageVector, val color
 fun ServiceProviderMapScreen() {
     var selectedServiceType by remember { mutableStateOf(ServiceType.ALL) }
     var searchQuery by remember { mutableStateOf("") }
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+    val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
 
-    // Sample data
+    // Request location permissions
+    LaunchedEffect(Unit) {
+        requestLocationPermission(context)
+        getCurrentLocation(context, fusedLocationClient) { location ->
+            currentLocation = location
+        }
+    }
+
+    // Sample data - now including distance calculation from current location
     val serviceProviders = remember {
         listOf(
             ServiceProvider("1", "Matara Central College", ServiceType.PLUMBING, 5.9485, 80.5353),
@@ -65,10 +89,19 @@ fun ServiceProviderMapScreen() {
         )
     }
 
-    // Initialize map position (Matara, Sri Lanka)
-    val defaultLocation = LatLng(5.9549, 80.5550)
+    // Initialize map position with current location or default
     val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(defaultLocation, 14f)
+        position = CameraPosition.fromLatLngZoom(
+            currentLocation ?: LatLng(5.9549, 80.5550), // Default to Matara if no location
+            14f
+        )
+    }
+
+    // Update camera when location changes
+    LaunchedEffect(currentLocation) {
+        currentLocation?.let { location ->
+            cameraPositionState.position = CameraPosition.fromLatLngZoom(location, 14f)
+        }
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
@@ -77,13 +110,20 @@ fun ServiceProviderMapScreen() {
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState
         ) {
-            // Add markers for service providers
             serviceProviders.forEach { provider ->
                 if (selectedServiceType == ServiceType.ALL || provider.type == selectedServiceType) {
+                    val iconResId = when (provider.type) {
+                        ServiceType.PLUMBING -> R.drawable.map4_24
+                        ServiceType.ELECTRICAL -> R.drawable.map3_24
+                        ServiceType.CLEANING -> R.drawable.map1_24
+                        ServiceType.ALL -> R.drawable.map2_24
+                    }
+
                     Marker(
                         state = MarkerState(LatLng(provider.latitude, provider.longitude)),
                         title = provider.name,
-                        snippet = provider.type.displayName
+                        snippet = provider.type.displayName,
+                        icon = BitmapDescriptorFactory.fromResource(iconResId)
                     )
                 }
             }
@@ -311,6 +351,61 @@ fun BottomNavigationBar(modifier: Modifier = Modifier) {
             )
         }
     }
+}
+
+// Location permission and tracking
+private fun requestLocationPermission(context: Context) {
+    val permissions = arrayOf(
+        Manifest.permission.ACCESS_FINE_LOCATION,
+        Manifest.permission.ACCESS_COARSE_LOCATION
+    )
+
+    if (ContextCompat.checkSelfPermission(
+            context,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        ) != PackageManager.PERMISSION_GRANTED
+    ) {
+        ActivityCompat.requestPermissions(
+            context as android.app.Activity,
+            permissions,
+            1
+        )
+    }
+}
+
+private fun getCurrentLocation(
+    context: Context,
+    fusedLocationClient: FusedLocationProviderClient,
+    onLocationResult: (LatLng) -> Unit
+) {
+    try {
+        if (ActivityCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) == PackageManager.PERMISSION_GRANTED
+        ) {
+            fusedLocationClient.lastLocation
+                .addOnSuccessListener { location ->
+                    location?.let {
+                        onLocationResult(LatLng(it.latitude, it.longitude))
+                    }
+                }
+        }
+    } catch (e: Exception) {
+        e.printStackTrace()
+    }
+}
+
+// Helper function to calculate distance between two points
+private fun calculateDistance(
+    lat1: Double,
+    lon1: Double,
+    lat2: Double,
+    lon2: Double
+): Float {
+    val results = FloatArray(1)
+    Location.distanceBetween(lat1, lon1, lat2, lon2, results)
+    return results[0]
 }
 
 // Preview
