@@ -13,6 +13,11 @@
         android:theme="@style/Theme.SevaLK"
         tools:targetApi="31">
         <activity
+            android:name=".presentation.auth.welcome.WelcomeScreen"
+            android:exported="false"
+            android:label="@string/title_activity_welcome_screen"
+            android:theme="@style/Theme.SevaLK" />
+        <activity
             android:name=".presentation.components.Card"
             android:exported="false"
             android:label="@string/title_activity_card"
