@@ -25,4 +25,9 @@ val S_BLUE_BACKGROUND = Color(0xFFEFF6FF)
 val S_PLACEHOLDER = Color(0xFF9CA3AF)
 val S_RED = Color(0xFFDD2929)
 val S_DARK_GREEN = Color(0xFF14532D)
+val S_ACCENT_TEXT = Color(0xFF444444) // adjust as needed
+val S_DISABLED_TEXT = Color(0xFF9E9E9E)
+val S_LIGHT_GREY = Color(0xFFF5F5F5)
+val S_TEXT_COLOR = Color(0xFF333333)
+
 

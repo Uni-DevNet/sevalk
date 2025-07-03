@@ -18,6 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.sevalk.presentation.customer.payment.CashPaymentScreen
+import com.sevalk.presentation.customer.payment.PaymentScreen
+import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 import com.sevalk.ui.theme.SevaLKTheme
 
 class MainActivity : ComponentActivity() {
@@ -44,7 +47,7 @@ private fun SevaLKApp () {
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                Text("Hello From SevaLK")
+                ProviderProfileScreen()
             }
         }
     }

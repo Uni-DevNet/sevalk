@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.places)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -56,4 +57,36 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+    implementation("androidx.activity:activity-compose:1.9.0")
+    implementation("androidx.compose.ui:ui:1.6.7")
+    implementation("androidx.compose.material3:material3:1.2.1")
+    implementation("androidx.compose.ui:ui-tooling-preview:1.6.7")
+    implementation("com.google.android.material:material:1.11.0")
+    implementation(platform("androidx.compose:compose-bom:2023.08.00")) // Or a newer version like 2024.04.00, etc.
+
+    // Core Compose dependencies
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3") // For Material 3 components
+
+    // Material Icons Extended - CRITICAL FOR YOUR MISSING ICONS
+    implementation("androidx.compose.material:material-icons-extended")
+
+    // Foundation - CRITICAL FOR 'clickable' and other basic UI elements
+    implementation("androidx.compose.foundation:foundation")
+
+    // Optional: If you use Material Design 2 specific components
+    // implementation("androidx.compose.material:material")
+
+    // Lifecycle for Compose (often useful)
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.0") // Check for latest
+    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.0") // Check for latest
+    implementation("androidx.activity:activity-compose:1.9.0") // Check for latest
+
+    // For previews
+    debugImplementation("androidx.compose.ui:ui-tooling")
+    debugImplementation("androidx.compose.ui:ui-test-manifest")
 }
