@@ -18,6 +18,7 @@ import com.sevalk.presentation.provider.jobs.JobsScreen
 import com.sevalk.presentation.provider.location.SetLocationScreen
 import com.sevalk.presentation.provider.profile.ProviderProfile
 import com.sevalk.presentation.provider.profile.ProviderProfileScreen
+import com.sevalk.presentation.provider.home.ProviderHomeScreen
 
 @Composable
 fun SevaLKNavigation(
@@ -128,6 +129,10 @@ fun SevaLKNavigation(
             ChatScreen(
 
             )
+        }
+
+        composable(Screen.ProviderHome.route) {
+            ProviderHomeScreen(navController = navController)
         }
     }
 }
