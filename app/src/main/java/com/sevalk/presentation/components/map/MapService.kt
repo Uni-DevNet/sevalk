@@ -21,6 +21,8 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.MapProperties
+import com.google.maps.android.compose.MapUiSettings
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import com.sevalk.R
@@ -58,7 +60,6 @@ fun MapService(
     val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
     val cameraPositionState = rememberCameraPositionState()
 
-    // Get current location
     LaunchedEffect(Unit) {
         if (showCurrentLocation) {
             requestLocationPermission(context)
@@ -68,7 +69,6 @@ fun MapService(
         }
     }
 
-    // Update camera position when location changes
     LaunchedEffect(currentLocation) {
         currentLocation?.let { location ->
             cameraPositionState.position = CameraPosition.fromLatLngZoom(location, initialZoom)
@@ -77,21 +77,12 @@ fun MapService(
 
     GoogleMap(
         modifier = modifier,
-        cameraPositionState = cameraPositionState
+        cameraPositionState = cameraPositionState,
+        uiSettings = MapUiSettings(myLocationButtonEnabled = showCurrentLocation),
+        properties = MapProperties(
+            isMyLocationEnabled = showCurrentLocation && currentLocation != null
+        )
     ) {
-        // Show current location marker
-        if (showCurrentLocation) {
-            currentLocation?.let { location ->
-                Marker(
-                    state = MarkerState(location),
-                    title = "Your Location",
-                    snippet = "Current position",
-                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
-                )
-            }
-        }
-        
-        // Show service provider markers
         serviceProviders.forEach { provider ->
             if (selectedServiceType == ServiceType.ALL || provider.type == selectedServiceType) {
                 val iconResId = when (provider.type) {
@@ -108,7 +99,7 @@ fun MapService(
                     icon = BitmapDescriptorFactory.fromResource(iconResId),
                     onClick = {
                         onMarkerClick?.invoke(provider)
-                        false // Return false to show info window
+                        false
                     }
                 )
             }
@@ -116,7 +107,6 @@ fun MapService(
     }
 }
 
-// Location permission and tracking functions
 private fun requestLocationPermission(context: Context) {
     val permissions = arrayOf(
         Manifest.permission.ACCESS_FINE_LOCATION,
@@ -152,7 +142,6 @@ private fun getCurrentLocation(
                     location?.let {
                         onLocationResult(LatLng(it.latitude, it.longitude))
                     } ?: run {
-                        // If no last known location, try to request a fresh location
                         fusedLocationClient.getCurrentLocation(
                             com.google.android.gms.location.Priority.PRIORITY_HIGH_ACCURACY,
                             null
@@ -164,7 +153,6 @@ private fun getCurrentLocation(
                     }
                 }
                 .addOnFailureListener {
-                    // Handle location failure - could show a message to user
                     it.printStackTrace()
                 }
         }
@@ -173,7 +161,6 @@ private fun getCurrentLocation(
     }
 }
 
-// Helper function to calculate distance between two points
 fun calculateDistance(
     lat1: Double,
     lon1: Double,
