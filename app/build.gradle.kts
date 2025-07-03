@@ -72,4 +72,5 @@ dependencies {
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.fragment.ktx)
+    implementation(platform("androidx.compose:compose-bom:2023.06.01"))
 }
