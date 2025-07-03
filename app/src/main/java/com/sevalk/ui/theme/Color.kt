@@ -26,3 +26,4 @@ val S_PLACEHOLDER = Color(0xFF9CA3AF)
 val S_RED = Color(0xFFDD2929)
 val S_DARK_GREEN = Color(0xFF14532D)
 val S_LIGHT_BLACK = Color(0xFF323232)
+
