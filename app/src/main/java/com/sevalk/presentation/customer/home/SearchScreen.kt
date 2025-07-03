@@ -102,13 +102,6 @@ fun ServiceProviderMapScreen(
                     .zIndex(3f)
             )
         }
-
-        BottomNavigationBar(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomStart)
-                .zIndex(4f)
-        )
     }
 }
 

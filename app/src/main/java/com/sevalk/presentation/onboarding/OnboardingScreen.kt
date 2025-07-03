@@ -16,6 +16,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
@@ -98,11 +99,6 @@ fun OnboardingScreen(
         )
 
         Spacer(modifier = Modifier.height(32.dp))
-    onComplete: () -> Unit = {}
-) {
-    Column(modifier = modifier) {
-        Text("Provider Onboarding Screen")
-        // TODO: Add onboarding content and call onComplete() when done
     }
 }
 
@@ -213,4 +209,13 @@ private fun OnboardingPageContent(page: OnboardingPage, currentPage: Int, totalP
 
         Spacer(modifier = Modifier.weight(1f))
     }
+}
+
+
+@Preview
+@Composable
+fun OnboardingScreenPreview() {
+    OnboardingScreen(
+        onGetStarted = { /* Handle Get Started click */ }
+    )
 }

@@ -21,7 +21,7 @@ import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 @Composable
 fun SevaLKNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Welcome.route
+    startDestination: String = Screen.Onboarding.route
 ) {
     NavHost(
         navController = navController,
@@ -29,15 +29,14 @@ fun SevaLKNavigation(
     ) {
         // Authentication Flow
         composable(Screen.Welcome.route) {
-//            WelcomeScreen(
-//                onNavigateToLogin = {
-//                    navController.navigate(Screen.Login.route)
-//                },
-//                onNavigateToRegistration = {
-//                    navController.navigate(Screen.Registration.route)
-//                }
-//            )
-            JobsScreen()
+            WelcomeScreen(
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route)
+                },
+                onNavigateToRegistration = {
+                    navController.navigate(Screen.Registration.route)
+                }
+            )
         }
         
         composable(Screen.Login.route) {
@@ -65,8 +64,8 @@ fun SevaLKNavigation(
         // Onboarding
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
-                onComplete = {
-                    navController.navigate(Screen.Home.route) {
+                onGetStarted = {
+                    navController.navigate(Screen.Welcome.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
                 }
@@ -75,7 +74,7 @@ fun SevaLKNavigation(
         
         // Customer Flow
         composable(Screen.Home.route) {
-            HomeScreen(
+            MainNavigation(
 
             )
         }
