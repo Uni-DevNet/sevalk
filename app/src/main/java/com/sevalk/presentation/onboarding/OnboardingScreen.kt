@@ -98,6 +98,11 @@ fun OnboardingScreen(
         )
 
         Spacer(modifier = Modifier.height(32.dp))
+    onComplete: () -> Unit = {}
+) {
+    Column(modifier = modifier) {
+        Text("Provider Onboarding Screen")
+        // TODO: Add onboarding content and call onComplete() when done
     }
 }
 
