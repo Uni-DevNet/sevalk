@@ -14,13 +14,16 @@ import com.sevalk.presentation.customer.home.HomeScreen
 import com.sevalk.presentation.customer.services.ServiceListScreen
 import com.sevalk.presentation.onboarding.OnboardingScreen
 import com.sevalk.presentation.provider.dashboard.ProviderDashboardScreen
+import com.sevalk.presentation.provider.jobs.JobsScreen
+import com.sevalk.presentation.provider.location.SetLocationScreen
+import com.sevalk.presentation.provider.profile.ProviderProfile
 import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 import com.sevalk.presentation.provider.home.ProviderHomeScreen
 
 @Composable
 fun SevaLKNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Home.route
+    startDestination: String = Screen.Onboarding.route
 ) {
     NavHost(
         navController = navController,
@@ -63,8 +66,8 @@ fun SevaLKNavigation(
         // Onboarding
         composable(Screen.Onboarding.route) {
             OnboardingScreen(
-                onComplete = {
-                    navController.navigate(Screen.Home.route) {
+                onGetStarted = {
+                    navController.navigate(Screen.Welcome.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
                 }
@@ -73,7 +76,9 @@ fun SevaLKNavigation(
         
         // Customer Flow
         composable(Screen.Home.route) {
-            HomeScreen(navController = navController)
+            MainNavigation(
+
+            )
         }
         
         composable(Screen.ServiceList.route) {
@@ -97,7 +102,25 @@ fun SevaLKNavigation(
         
         composable(Screen.ProviderProfile.route) {
             ProviderProfileScreen(
-
+                initialProviderProfile = ProviderProfile(
+                    name = "John Plumbing",
+                    memberSince = "March 2023",
+                    completedJobs = 43,
+                    totalJobs = 327,
+                    location = "Weligama, Southern Province",
+                    totalEarnings = "LKR 45,600",
+                    email = "john.obus@email.com",
+                    phoneNumber = "+44 77 123 4567",
+                    isAvailable = true,
+                    responseTime = "1 hour"
+                )
+                ,
+                onSwitchToCustomerClick = { true },
+                onLogoutClick = { /* Handle logout */ },
+                onServicesClick = { /* Handle services */ },
+                onPaymentMethodsClick = { /* Handle payments */ },
+                onPrivacySecurityClick = { /* Handle privacy */ },
+                onHelpSupportClick = { /* Handle help */ }
             )
         }
         

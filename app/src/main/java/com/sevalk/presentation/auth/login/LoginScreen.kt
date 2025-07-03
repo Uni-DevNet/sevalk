@@ -97,7 +97,9 @@ fun LoginScreen(
                 // Login Button
                 PrimaryButton(
                     text = "Login",
-                    onClick = {}
+                    onClick = {
+                        onLoginSuccess()
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))

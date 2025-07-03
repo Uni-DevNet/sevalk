@@ -28,14 +28,18 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sevalk.R
+import com.sevalk.ui.theme.S_YELLOW
 import java.text.SimpleDateFormat
 import java.util.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.sevalk.presentation.components.common.PrimaryButton
+import com.sevalk.presentation.components.common.PrimaryButtonStyle
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onNavigateBack: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(0) }
     var selectedService by remember { mutableStateOf("Cleaning") }
@@ -44,17 +48,18 @@ fun BookingScreen(
     var selectedDate by remember { mutableStateOf("") }
     var selectedTime by remember { mutableStateOf("") }
     var isFavorite by remember { mutableStateOf(false) }
-    
-    // Date and Time picker states
+
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
-    
-    // Handle system back button
+
     BackHandler(enabled = selectedTab == 1) {
         selectedTab = 0
     }
-    
-    // Date picker dialog
+
+    BackHandler(enabled = selectedTab == 0) {
+        onNavigateBack()
+    }
+
     if (showDatePicker) {
         DatePickerDialog(
             onDateSelected = { dateMillis ->
@@ -68,8 +73,7 @@ fun BookingScreen(
             onDismiss = { showDatePicker = false }
         )
     }
-    
-    // Time picker dialog
+
     if (showTimePicker) {
         TimePickerDialog(
             onTimeSelected = { hour, minute ->
@@ -88,8 +92,7 @@ fun BookingScreen(
             .padding(20.dp)
     ) {
         Spacer(modifier = Modifier.height(50.dp))
-        
-        // Header
+
         Text(
             text = "Booking Confirmation",
             fontSize = 24.sp,
@@ -98,11 +101,9 @@ fun BookingScreen(
         )
         
         Spacer(modifier = Modifier.height(20.dp))
-        
-        // Service Provider Info
+
         when (selectedTab) {
             0 -> {
-                // Service Provider Info Card for first tab
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -116,16 +117,15 @@ fun BookingScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Profile picture with online indicator (no gray background)
                             Box {
-                                // Profile image placeholder - you can replace with actual image
+                                
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = "Profile",
                                     modifier = Modifier.size(50.dp),
                                    
                                 )
-                                // Online indicator
+
                                 Box(
                                     modifier = Modifier
                                         .size(12.dp)
@@ -219,7 +219,6 @@ fun BookingScreen(
                 }
             }
             1 -> {
-                // Service Provider Info Card for second tab (same as first tab)
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -233,16 +232,15 @@ fun BookingScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            // Profile picture with online indicator (no gray background)
+
                             Box {
-                                // Profile image placeholder - you can replace with actual image
+                               
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = "Profile",
                                     modifier = Modifier.size(50.dp),
                                    
                                 )
-                                // Online indicator
                                 Box(
                                     modifier = Modifier
                                         .size(12.dp)
@@ -346,8 +344,7 @@ fun BookingScreen(
         )
         
         Spacer(modifier = Modifier.height(24.dp))
-        
-        // Tab Title
+  
         Text(
             text = if (selectedTab == 0) "Select Service/s" else "Schedule & Details",
             fontSize = 20.sp,
@@ -356,14 +353,13 @@ fun BookingScreen(
         )
         
         Spacer(modifier = Modifier.height(16.dp))
-        
-        // Progress Indicator
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Step 1
+
             Box(
                 modifier = Modifier
                     .size(32.dp)
@@ -396,8 +392,7 @@ fun BookingScreen(
                     .height(2.dp)
                     .background(if (selectedTab > 0) Color(0xFFFFC107) else Color.Gray.copy(alpha = 0.3f))
             )
-            
-            // Step 2
+
             Box(
                 modifier = Modifier
                     .size(32.dp)
@@ -417,11 +412,10 @@ fun BookingScreen(
         }
         
         Spacer(modifier = Modifier.height(24.dp))
-        
-        // Tab Content
+
         when (selectedTab) {
             0 -> {
-                // First Tab - Service Selection
+
                 Column(
                     modifier = Modifier.fillMaxSize()
                 ) {
@@ -433,8 +427,7 @@ fun BookingScreen(
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
-                    
-                    // Plumbing Service
+
                     ServiceCard(
                         title = "Plumbing",
                         subtitle = "Fixing and installing water systems",
@@ -457,23 +450,12 @@ fun BookingScreen(
                     
                     Spacer(modifier = Modifier.weight(1f))
 
-                    Button(
+                    PrimaryButton(
+                        text = "Continue to Details",
                         onClick = { selectedTab = 1 },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(50.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFFFC107)
-                        ),
-                        shape = RoundedCornerShape(25.dp)
-                    ) {
-                        Text(
-                            text = "Continue to Details",
-                            color = Color.Black,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 16.sp
-                        )
-                    }
+                        backgroundColor = S_YELLOW,
+                        foregroundColor = Color.White
+                    )
                 }
             }
             1 -> {
@@ -645,32 +627,14 @@ fun BookingScreen(
                     }
                     
                     Spacer(modifier = Modifier.height(118.dp))
-                    
-                    // Confirm Booking Button
-                    Button(
-                        onClick = { /* Handle confirm booking */ },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFFFFC107)
-                        ),
-                        shape = RoundedCornerShape(28.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Check,
-                            contentDescription = null,
-                            tint = Color.Black,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Confirm Booking",
-                            color = Color.Black,
-                            fontWeight = FontWeight.Medium,
-                            fontSize = 16.sp
-                        )
-                    }
+
+                    PrimaryButton(
+                        text = "Confirm Booking",
+                        onClick = { },
+                        backgroundColor = S_YELLOW,
+                        foregroundColor = Color.White,
+                        style = PrimaryButtonStyle.ICON_TEXT
+                    )
                 }
             }
         }
