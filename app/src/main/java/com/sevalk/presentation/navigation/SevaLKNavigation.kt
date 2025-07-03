@@ -15,11 +15,12 @@ import com.sevalk.presentation.customer.services.ServiceListScreen
 import com.sevalk.presentation.onboarding.OnboardingScreen
 import com.sevalk.presentation.provider.dashboard.ProviderDashboardScreen
 import com.sevalk.presentation.provider.profile.ProviderProfileScreen
+import com.sevalk.presentation.provider.home.ProviderHomeScreen
 
 @Composable
 fun SevaLKNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Welcome.route
+    startDestination: String = Screen.Home.route
 ) {
     NavHost(
         navController = navController,
@@ -72,9 +73,7 @@ fun SevaLKNavigation(
         
         // Customer Flow
         composable(Screen.Home.route) {
-            HomeScreen(
-
-            )
+            HomeScreen(navController = navController)
         }
         
         composable(Screen.ServiceList.route) {
@@ -107,6 +106,10 @@ fun SevaLKNavigation(
             ChatScreen(
 
             )
+        }
+
+        composable(Screen.ProviderHome.route) {
+            ProviderHomeScreen(navController = navController)
         }
     }
 }
