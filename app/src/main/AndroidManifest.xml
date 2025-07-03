@@ -3,6 +3,7 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <application
+        android:name=".SevaLKApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -12,16 +13,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.SevaLK"
         tools:targetApi="31">
-        <activity
-            android:name=".presentation.auth.welcome.WelcomeScreen"
-            android:exported="false"
-            android:label="@string/title_activity_welcome_screen"
-            android:theme="@style/Theme.SevaLK" />
-        <activity
-            android:name=".presentation.components.Card"
-            android:exported="false"
-            android:label="@string/title_activity_card"
-            android:theme="@style/Theme.SevaLK" />
         <activity
             android:name=".MainActivity"
             android:exported="true"

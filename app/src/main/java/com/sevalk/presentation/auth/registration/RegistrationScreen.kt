@@ -53,7 +53,8 @@ import com.sevalk.ui.theme.SevaLKTheme
 
 @Composable
 fun RegistrationScreen(
-    viewModel: RegistrationViewModel = viewModel()
+    viewModel: RegistrationViewModel = viewModel(),
+    onNavigateToLogin: () -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsState().value
 
@@ -79,10 +80,22 @@ fun RegistrationScreen(
                     totalSteps = 3
                 )
                 Spacer(modifier = Modifier.height(40.dp))
-                Step3AlmostThere(
-                    uiState = uiState,
-                    onEvent = viewModel::onEvent
-                )
+                
+                when (uiState.currentStep) {
+                    1 -> Step1GetStarted(
+                        uiState = uiState,
+                        onEvent = viewModel::onEvent,
+                        onNavigateToLogin = onNavigateToLogin
+                    )
+                    2 -> Step2VerifyEmail(
+                        uiState = uiState,
+                        onEvent = viewModel::onEvent
+                    )
+                    3 -> Step3AlmostThere(
+                        uiState = uiState,
+                        onEvent = viewModel::onEvent
+                    )
+                }
             }
         }
     }
@@ -91,7 +104,8 @@ fun RegistrationScreen(
 @Composable
 fun Step1GetStarted(
     uiState: RegistrationState,
-    onEvent: (RegistrationEvent) -> Unit
+    onEvent: (RegistrationEvent) -> Unit,
+    onNavigateToLogin: () -> Unit = {}
 ) {
     Column {
         // Full Name TextField
@@ -119,7 +133,7 @@ fun Step1GetStarted(
         PrimaryButton(
             text = "Next: Verify Email",
             onClick = {
-                // TODO: Add validation logic here
+                onEvent(RegistrationEvent.NextStep)
             }
         )
 
@@ -186,7 +200,7 @@ fun Step1GetStarted(
                 color = Color(0xFFFFC107),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clickable {  }
+                modifier = Modifier.clickable { onNavigateToLogin() }
             )
         }
     }
@@ -247,7 +261,9 @@ fun Step2VerifyEmail(
         Spacer(modifier = Modifier.height(64.dp))
         PrimaryButton(
             text = "Verify & Continue",
-            onClick = {}
+            onClick = {
+                onEvent(RegistrationEvent.NextStep)
+            }
         )
         Spacer(modifier = Modifier.height(20.dp))
         Row(
@@ -265,7 +281,7 @@ fun Step2VerifyEmail(
                 color = Color(0xFFFFC107),
                 fontSize = 14.sp,
                 fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.clickable { /* TODO: Add logic to go back */ }
+                modifier = Modifier.clickable { onEvent(RegistrationEvent.PreviousStep) }
             )
         }
     }
@@ -316,11 +332,14 @@ fun Step3AlmostThere(
             placeholder = "Enter your password",
             leadingIcon = painterResource(id = R.drawable.lock),
             keyboardType = KeyboardType.Password,
+            isPasswordField = true,
+            isPasswordVisible = uiState.isPasswordVisible,
             trailingIcon = if (uiState.isPasswordVisible) {
                 painterResource(id = R.drawable.eye_slash)
             } else {
                 painterResource(id = R.drawable.eye)
             },
+            onTrailingIconClick = { onEvent(RegistrationEvent.TogglePasswordVisibility) }
         )
 
         CustomTextField(
@@ -330,11 +349,14 @@ fun Step3AlmostThere(
             placeholder = "Re Enter your password",
             leadingIcon = painterResource(id = R.drawable.lock),
             keyboardType = KeyboardType.Password,
-            trailingIcon = if (uiState.isPasswordVisible) {
+            isPasswordField = true,
+            isPasswordVisible = uiState.isConfirmPasswordVisible,
+            trailingIcon = if (uiState.isConfirmPasswordVisible) {
                 painterResource(id = R.drawable.eye_slash)
             } else {
                 painterResource(id = R.drawable.eye)
             },
+            onTrailingIconClick = { onEvent(RegistrationEvent.ToggleConfirmPasswordVisibility) }
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -342,7 +364,7 @@ fun Step3AlmostThere(
         PrimaryButton(
             text = "Create My Account",
             onClick = {
-                // TODO: Create account logic
+                onEvent(RegistrationEvent.SubmitRegistration)
             }
         )
     }

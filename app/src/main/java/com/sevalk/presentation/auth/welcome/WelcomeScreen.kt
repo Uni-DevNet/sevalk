@@ -26,7 +26,8 @@ import com.sevalk.ui.theme.SevaLKTheme
 
 @Composable
 fun WelcomeScreen(
-
+    onNavigateToLogin: () -> Unit = {},
+    onNavigateToRegistration: () -> Unit = {}
 ) {
    Surface(
          modifier = Modifier.fillMaxSize(),
@@ -58,11 +59,11 @@ fun WelcomeScreen(
            )
            Spacer(modifier = Modifier.height(46.dp))
            PrimaryButton(text = "Sign UP", onClick = {
-                //TODO: Navigate to Sign Up Screen
+                onNavigateToRegistration()
            })
            Spacer(modifier = Modifier.height(22.dp))
            PrimaryButton(text = "Login", onClick = {
-                //TODO: Navigate to Login Screen
+                onNavigateToLogin()
            }, style = PrimaryButtonStyle.OUTLINE)
        }
    }

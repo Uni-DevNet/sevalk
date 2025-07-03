@@ -10,6 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -28,6 +29,8 @@ fun CustomTextField(
     onTrailingIconClick: (() -> Unit)? = null,
     keyboardType: KeyboardType = KeyboardType.Text,
     visualTransformation: VisualTransformation = VisualTransformation.None,
+    isPasswordField: Boolean = false,
+    isPasswordVisible: Boolean = false,
     isError: Boolean = false,
     errorMessage: String? = null,
     maxLines: Int = 1,
@@ -97,7 +100,11 @@ fun CustomTextField(
                     }
                 }
             },
-            visualTransformation = visualTransformation,
+            visualTransformation = if (isPasswordField && !isPasswordVisible) {
+                PasswordVisualTransformation()
+            } else {
+                visualTransformation
+            },
             keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
             singleLine = maxLines == 1,
             maxLines = maxLines,
