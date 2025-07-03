@@ -7,9 +7,11 @@ import androidx.compose.ui.Modifier
 
 @Composable
 fun OnboardingScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onComplete: () -> Unit = {}
 ) {
     Column(modifier = modifier) {
         Text("Provider Onboarding Screen")
+        // TODO: Add onboarding content and call onComplete() when done
     }
 }

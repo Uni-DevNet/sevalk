@@ -7,6 +7,7 @@
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
     <application
+        android:name=".SevaLKApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -19,11 +20,6 @@
         <meta-data
             android:name="com.google.android.geo.API_KEY"
             android:value="AIzaSyBWaQI-_zWwmwazesDM7M6FReCVtixiTuc" />
-        <activity
-            android:name=".presentation.components.Card"
-            android:exported="false"
-            android:label="@string/title_activity_card"
-            android:theme="@style/Theme.SevaLK" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
