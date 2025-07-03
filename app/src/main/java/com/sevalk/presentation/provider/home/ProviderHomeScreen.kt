@@ -100,7 +100,7 @@ fun ProviderHomeScreen(navController: NavController) {
                     onClick = { navController.navigate(Screen.Home.route) },
                     modifier = Modifier.weight(1f),
                     style = if (selectedTab == 0) com.sevalk.presentation.components.common.PrimaryButtonStyle.TEXT else com.sevalk.presentation.components.common.PrimaryButtonStyle.OUTLINE,
-                    backgroundColor = if (selectedTab == 0) Color(0xFFFFC107) else Color.White,
+                    backgroundColor = if (selectedTab == 0) Color(0xFFFFC107) else Color(0xFFF5F5F5),
                     foregroundColor = if (selectedTab == 0) Color.Black else Color(0xFFFFC107)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
