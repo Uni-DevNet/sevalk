@@ -15,24 +15,26 @@ import androidx.compose.ui.platform.LocalContext
 private val DarkColorScheme = darkColorScheme(
     primary = S_YELLOW,
     secondary = S_INPUT_BACKGROUND,
-    tertiary = S_LIGHT_YELLOW
+    tertiary = S_LIGHT_YELLOW,
 )
 
 private val LightColorScheme = lightColorScheme(
     primary = S_YELLOW,
     secondary = S_INPUT_BACKGROUND,
     tertiary = S_LIGHT_YELLOW,
-    onPrimary = Color.White
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
     onPrimary = Color.White,
-    onSecondary = Color.White,
-    onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    background = Color.White
+    // In com/sevalk/ui/theme/Color.kt
+
+/* Other default colors to override
+background = Color(0xFFFFFBFE),
+surface = Color(0xFFFFFBFE),
+onPrimary = Color.White,
+onSecondary = Color.White,
+onTertiary = Color.White,
+onBackground = Color(0xFF1C1B1F),
+onSurface = Color(0xFF1C1B1F),
+*/
 )
 
 @Composable

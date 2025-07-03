@@ -13,7 +13,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
-import androidx.compose.ui.res.painterResource
 import com.sevalk.R
 import com.sevalk.presentation.components.map.MapService
 import com.sevalk.presentation.components.map.ServiceProvider
@@ -21,7 +20,10 @@ import com.sevalk.presentation.components.map.ServiceType
 import com.sevalk.presentation.components.map.SearchBar
 import com.sevalk.presentation.components.map.ServiceTypeFilters
 import com.sevalk.data.repository.ServiceProviderRepository
+import com.sevalk.presentation.components.common.PrimaryButton
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.ui.res.painterResource
+import com.sevalk.ui.theme.S_YELLOW
 
 
 @Composable
@@ -100,13 +102,6 @@ fun ServiceProviderMapScreen(
                     .zIndex(3f)
             )
         }
-
-        BottomNavigationBar(
-            modifier = Modifier
-                .fillMaxWidth()
-                .align(Alignment.BottomStart)
-                .zIndex(4f)
-        )
     }
 }
 
@@ -162,7 +157,6 @@ fun ProviderInfoCard(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // Profile picture placeholder
                 Box(
                     modifier = Modifier
                         .size(60.dp)
@@ -232,8 +226,7 @@ fun ProviderInfoCard(
             }
             
             Spacer(modifier = Modifier.height(16.dp))
-            
-            // Service info
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -274,32 +267,29 @@ fun ProviderInfoCard(
             }
             
             Spacer(modifier = Modifier.height(20.dp))
-            
-            // Action buttons
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Button(
+                PrimaryButton(
+                    text = "Book Now",
                     onClick = onBookNow,
                     modifier = Modifier.weight(1f),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFFFC107)
-                    ),
-                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "Book Now",
-                        color = Color.Black,
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                }
+                    backgroundColor = S_YELLOW,
+                    foregroundColor = Color.White
+                )
                 
-                OutlinedButton(
-                    onClick = { /* Handle contact */ },
-                    modifier = Modifier.size(48.dp),
+                Button(
+                    onClick = {},
+                    modifier = Modifier.size(52.dp),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color.Gray
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.phone_20_20),
@@ -309,16 +299,21 @@ fun ProviderInfoCard(
                     )
                 }
                 
-                OutlinedButton(
-                    onClick = { /* Handle message */ },
-                    modifier = Modifier.size(48.dp),
+                Button(
+                    onClick = {},
+                    modifier = Modifier.size(52.dp),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.Transparent,
+                        contentColor = Color.Gray
+                    ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                    contentPadding = PaddingValues(0.dp)
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.message_circle_20_20),
                         contentDescription = "Message",
-                        tint = Color.Red,
+                        tint = Color.Gray,
                         modifier = Modifier.size(20.dp)
                     )
                 }
@@ -344,7 +339,7 @@ fun BottomNavigationBar(modifier: Modifier = Modifier) {
         items.forEach { (title, icon, isSelected) ->
             NavigationBarItem(
                 selected = isSelected,
-                onClick = { /* Handle navigation */ },
+                onClick = {},
                 icon = {
                     Icon(
                         imageVector = icon,

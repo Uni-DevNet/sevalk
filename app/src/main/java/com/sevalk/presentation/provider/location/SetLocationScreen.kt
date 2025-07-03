@@ -1,9 +1,14 @@
 package com.sevalk.presentation.provider.location
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Edit
@@ -15,26 +20,66 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 import com.sevalk.R
 import com.sevalk.data.models.LocationMethod
 import com.sevalk.data.models.ServiceLocation
 import com.sevalk.presentation.components.common.PrimaryButton
+import com.sevalk.ui.theme.S_LIGHT_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SetLocationScreen(
-    viewModel: SetLocationViewModel = viewModel(),
     onSetupComplete: () -> Unit = {}
 ) {
+    val context = LocalContext.current
+    val viewModel: SetLocationViewModel = viewModel { SetLocationViewModel(context) }
     val uiState by viewModel.uiState.collectAsState()
     val serviceRadius by viewModel.serviceRadius.collectAsState()
+    var searchQuery by remember { mutableStateOf("") }
+    val scrollState = rememberScrollState()
+    var hasRequestedInitialPermission by remember { mutableStateOf(false) }
+    
+    // Location permission launcher
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestMultiplePermissions()
+    ) { permissions ->
+        val fineLocationGranted = permissions[Manifest.permission.ACCESS_FINE_LOCATION] == true
+        val coarseLocationGranted = permissions[Manifest.permission.ACCESS_COARSE_LOCATION] == true
+        
+        if (fineLocationGranted || coarseLocationGranted) {
+            // Permission granted, get location
+            if (hasRequestedInitialPermission) {
+                viewModel.initializeWithPermission()
+            } else {
+                viewModel.getCurrentLocationWithPermission()
+            }
+        } else {
+            // Permission denied, show error or fallback
+            viewModel.onLocationPermissionDenied()
+        }
+    }
+    
+    // Request permission on initial load
+    LaunchedEffect(Unit) {
+        if (!hasRequestedInitialPermission) {
+            hasRequestedInitialPermission = true
+            locationPermissionLauncher.launch(arrayOf(
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
+            ))
+        }
+    }
     
     LaunchedEffect(uiState.setupCompleted) {
         if (uiState.setupCompleted) {
@@ -44,56 +89,94 @@ fun SetLocationScreen(
 
     Surface (
         modifier = Modifier.fillMaxSize(),
-        color = Color.White
+        color = Color.White,
     ){
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(24.dp)
-        ) {
-            // Header
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Text(
-                    text = "Set Your Service Location",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = Color.Black
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(scrollState)
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(24.dp)
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                // Header
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Set Your Service Location",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black
+                    )
+                    Text(
+                        text = "Let customers know where you provide your services",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                }
+
+                // Location Method Selection
+                LocationMethodSection(
+                    methods = uiState.locationMethods,
+                    onMethodSelected = { methodId ->
+                        if (methodId == "current_location") {
+                            locationPermissionLauncher.launch(arrayOf(
+                                Manifest.permission.ACCESS_FINE_LOCATION,
+                                Manifest.permission.ACCESS_COARSE_LOCATION
+                            ))
+                        } else {
+                            viewModel.selectLocationMethod(methodId)
+                        }
+                    }
                 )
-                Text(
-                    text = "Let customers know where you provide your services",
-                    fontSize = 16.sp,
-                    color = Color.Gray
+
+                // Map Section (only show when "Select on Map" is selected)
+                val selectedMethod = uiState.locationMethods.find { it.isSelected }
+                if (selectedMethod?.id == "select_on_map") {
+                    GoogleMapSelectionSection(
+                        searchQuery = searchQuery,
+                        onSearchQueryChange = { searchQuery = it },
+                        onLocationSelected = viewModel::setLocationFromMap,
+                        currentLocation = uiState.selectedMapLocation
+                    )
+                }
+
+                // Primary Service Location
+                uiState.primaryLocation?.let { location ->
+                    PrimaryLocationSection(
+                        location = location,
+                        onChangeLocation = viewModel::changeLocation
+                    )
+                }
+
+                // Service Radius
+                ServiceRadiusSection(
+                    radius = serviceRadius,
+                    onRadiusChange = viewModel::updateServiceRadius
+                )
+
+                Spacer(modifier = Modifier.weight(1f))
+
+                // Complete Setup Button
+                PrimaryButton(
+                    text = "Complete Setup",
+                    onClick = viewModel::completeSetup
                 )
             }
-
-            // Location Method Selection
-            LocationMethodSection(
-                methods = uiState.locationMethods,
-                onMethodSelected = viewModel::selectLocationMethod
-            )
-
-            // Primary Service Location
-            uiState.primaryLocation?.let { location ->
-                PrimaryLocationSection(
-                    location = location,
-                    onChangeLocation = viewModel::changeLocation
-                )
+            
+            // Loading indicator
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.3f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFFFFC107)
+                    )
+                }
             }
-
-            // Service Radius
-            ServiceRadiusSection(
-                radius = serviceRadius,
-                onRadiusChange = viewModel::updateServiceRadius
-            )
-
-            Spacer(modifier = Modifier.weight(1f))
-
-            // Complete Setup Button
-            PrimaryButton(
-                text = "Complete Setup",
-                onClick = viewModel::completeSetup
-            )
         }
     }
 }
@@ -291,6 +374,90 @@ private fun ServiceRadiusSection(
         
         Text(
             text = "You'll be visible to customers within ${radius.toInt()} km of your location",
+            fontSize = 14.sp,
+            color = Color.Gray
+        )
+    }
+}
+
+@Composable
+private fun GoogleMapSelectionSection(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    onLocationSelected: (Double, Double) -> Unit,
+    currentLocation: LatLng?
+) {
+    var selectedLocation by remember { mutableStateOf(currentLocation ?: LatLng(6.0329, 80.2168)) } // Default to Colombo
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(selectedLocation, 15f)
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        // Map with Search Bar overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(300.dp)
+                .clip(RoundedCornerShape(12.dp))
+        ) {
+            // Google Map
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                onMapClick = { clickedLocation ->
+                    selectedLocation = clickedLocation
+                    onLocationSelected(clickedLocation.latitude, clickedLocation.longitude)
+                }
+            ) {
+                Marker(
+                    state = MarkerState(position = selectedLocation),
+                    title = "Selected Location",
+                    snippet = "Tap to confirm this location"
+                )
+            }
+            
+            // Search Bar positioned at top of map
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                placeholder = { 
+                    Text(
+                        text = "Search location...",
+                        color = Color.Gray
+                    )
+                },
+                leadingIcon = { 
+                    Icon(
+                        painter = painterResource(id = R.drawable.search), 
+                        tint = Color.Unspecified, 
+                        contentDescription = "Search Icon"
+                    ) 
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp)
+                    .align(Alignment.TopCenter),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = S_LIGHT_YELLOW,
+                    unfocusedBorderColor = Color.LightGray,
+                    cursorColor = Color(0xFFFFC107),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
+                ),
+                shape = RoundedCornerShape(12.dp)
+            )
+        }
+        
+        // Location info
+        Text(
+            text = "Lat: ${String.format("%.6f", selectedLocation.latitude)}, Lng: ${String.format("%.6f", selectedLocation.longitude)}",
+            fontSize = 12.sp,
+            color = Color.Gray,
+            modifier = Modifier.fillMaxWidth()
+        )
+        
+        Text(
+            text = "Tap on the map to select your service location",
             fontSize = 14.sp,
             color = Color.Gray
         )
