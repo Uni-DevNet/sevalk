@@ -22,8 +22,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sevalk.presentation.auth.components.CustomTextField
@@ -33,6 +35,8 @@ import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.S_LIGHT_TEXT
 import com.sevalk.ui.theme.S_INPUT_BACKGROUND
 import androidx.navigation.NavController
+import com.sevalk.presentation.navigation.Screen
+import com.sevalk.ui.theme.SevaLKTheme
 
 data class ServiceItem(
     val name: String,
@@ -120,8 +124,6 @@ fun HomeScreen(
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
-
         // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -174,10 +176,12 @@ fun HomeScreen(
             Spacer(modifier = Modifier.width(8.dp))
             PrimaryButton(
                 text = "My Business",
-                onClick = { navController.navigate(com.sevalk.presentation.navigation.Screen.ProviderHome.route) },
+                onClick = {
+                    navController.navigate(Screen.ProviderHome.route)
+                },
                 modifier = Modifier.weight(1f),
                 style = PrimaryButtonStyle.OUTLINE,
-                backgroundColor = S_INPUT_BACKGROUND,
+                backgroundColor = Color.Gray.copy(alpha = 0.4f),
                 foregroundColor = S_YELLOW
             )
         }
@@ -472,5 +476,14 @@ fun ProviderCard(
                 )
             }
         }
+    }
+}
+
+
+@Composable
+@Preview(showBackground = true)
+fun HomeScreenPreview() {
+    SevaLKTheme {
+        HomeScreen(navController = NavController(context = LocalContext.current))
     }
 }

@@ -58,34 +58,10 @@ fun ProviderProfileScreen(
     val CardBackground = Color(0xFFF8F9FA)
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { },
-                actions = {
-                    Button(
-                        onClick = onSwitchToCustomerClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = YellowHighlight,
-                            contentColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Text("Switch to Customer", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    scrolledContainerColor = Color.White
-                )
-            )
-        }
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .background(Color.White)
         ) {
             Column(
@@ -93,6 +69,19 @@ fun ProviderProfileScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
+                Button(
+                    onClick = onSwitchToCustomerClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = YellowHighlight,
+                        contentColor = Color.Black
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                    modifier = Modifier.padding(end = 8.dp)
+                        .align(Alignment.End)
+                ) {
+                    Text("Switch to Customer", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                }
                 // Profile Header Section
                 Spacer(modifier = Modifier.height(16.dp))
                 Row(

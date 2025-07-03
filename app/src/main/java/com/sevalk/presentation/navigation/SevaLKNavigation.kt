@@ -77,7 +77,7 @@ fun SevaLKNavigation(
         // Customer Flow
         composable(Screen.Home.route) {
             MainNavigation(
-
+                navController = navController
             )
         }
         
@@ -94,9 +94,9 @@ fun SevaLKNavigation(
         }
         
         // Provider Flow
-        composable(Screen.ProviderDashboard.route) {
-            ProviderDashboardScreen(
-
+        composable(Screen.CustomerHome.route) {
+            HomeScreen(
+                navController = navController
             )
         }
         
@@ -127,7 +127,7 @@ fun SevaLKNavigation(
         // Shared Screens
         composable(Screen.Chat.route) {
             ChatScreen(
-
+                navController = navController
             )
         }
 

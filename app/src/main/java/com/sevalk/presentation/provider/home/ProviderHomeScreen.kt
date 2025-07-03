@@ -52,6 +52,7 @@ fun ProviderHomeScreen(navController: NavController) {
             .fillMaxSize()
             .background(Color.White)
             .padding(16.dp)
+            .padding(top = 32.dp)
     ) {
         item {
             // Header
@@ -100,8 +101,8 @@ fun ProviderHomeScreen(navController: NavController) {
                     onClick = { navController.navigate(Screen.Home.route) },
                     modifier = Modifier.weight(1f),
                     style = if (selectedTab == 0) com.sevalk.presentation.components.common.PrimaryButtonStyle.TEXT else com.sevalk.presentation.components.common.PrimaryButtonStyle.OUTLINE,
-                    backgroundColor = if (selectedTab == 0) Color(0xFFFFC107) else Color.White,
-                    foregroundColor = if (selectedTab == 0) Color.Black else Color(0xFFFFC107)
+                    backgroundColor = if (selectedTab == 0) Color(0xFFFFC107) else Color.Gray.copy(alpha = 0.2f),
+                    foregroundColor = if (selectedTab == 0) Color.Black else Color.Gray.copy(alpha = 0.2f)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 com.sevalk.presentation.components.common.PrimaryButton(

@@ -35,6 +35,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sevalk.R
+import androidx.navigation.NavController
+import com.sevalk.presentation.navigation.Screen
 
 // Data class to hold profile information
 data class UserProfile(
@@ -52,6 +54,7 @@ data class UserProfile(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CustomerProfileScreen(
+    navController: NavController,
     initialUserProfile: UserProfile, // Changed to initialUserProfile to manage mutable state internally
     onSwitchToProviderClick: () -> Unit,
     // onEditProfileClick will now be handled internally to show the popup
@@ -72,39 +75,29 @@ fun CustomerProfileScreen(
     val CardBackground = Color(0xFFF8F9FA) // Light gray background for cards
 
     Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { },
-                actions = {
-                    Button(
-                        onClick = onSwitchToProviderClick,
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = YellowHighlight,
-                            contentColor = Color.Black
-                        ),
-                        shape = RoundedCornerShape(20.dp),
-                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                        modifier = Modifier.padding(end = 8.dp)
-                    ) {
-                        Text("Switch to Provider", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White,
-                    scrolledContainerColor = Color.White
-                )
-            )
-        }
+
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .background(Color.White)
         ) {
             // Profile Header Section
-            Spacer(modifier = Modifier.height(16.dp))
+            Button(
+                onClick = onSwitchToProviderClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = YellowHighlight,
+                    contentColor = Color.Black
+                ),
+                shape = RoundedCornerShape(20.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
+                modifier = Modifier.padding(end = 8.dp)
+                    .align(Alignment.End)
+            ) {
+                Text("Switch to Provider", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -443,15 +436,6 @@ fun CustomerProfileScreenPreview() {
             phoneNumber = "+94 77 123 4567",
             joinDate = "March 2023"
         )
-        CustomerProfileScreen(
-            initialUserProfile = sampleUserProfile,
-            onSwitchToProviderClick = {},
-            // onEditProfileClick is now handled internally
-            onLogoutClick = {},
-            onFavoritesClick = {},
-            onPaymentMethodsClick = {},
-            onPrivacySecurityClick = {},
-            onHelpSupportClick = {}
-        )
+        // CustomerProfileScreen with dummy NavController for preview
     }
 }

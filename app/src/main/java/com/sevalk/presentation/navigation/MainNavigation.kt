@@ -5,12 +5,25 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.sevalk.presentation.provider.jobs.JobsScreen
+import androidx.navigation.NavController
+import com.sevalk.presentation.chat.ChatScreen
+import com.sevalk.presentation.customer.booking.BookingScreen
+import com.sevalk.presentation.customer.booking.MyBookingsScreen
+import com.sevalk.presentation.customer.home.HomeScreen
+import com.sevalk.presentation.customer.home.ServiceProviderMapScreen
+import com.sevalk.presentation.customer.profile.CustomerProfileScreen
+import com.sevalk.presentation.customer.profile.UserProfile
+import com.sevalk.presentation.provider.home.ProviderHomeScreen
+import com.sevalk.presentation.provider.profile.ProviderProfile
+import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainNavigation() {
+fun MainNavigation(
+    navController: NavController,
+) {
     var selectedTab by remember { mutableStateOf(NavigationTab.HOME) }
+    var isProviderMode by remember { mutableStateOf(false) }
     
     Scaffold(
         bottomBar = {
@@ -27,49 +40,75 @@ fun MainNavigation() {
         ) {
             when (selectedTab) {
                 NavigationTab.HOME -> {
-                    // Home screen content - for now showing JobsScreen
-                    JobsScreen()
+                    if (isProviderMode) {
+                        ProviderHomeScreen(navController = navController)
+                    } else {
+                        HomeScreen(navController = navController)
+                    }
                 }
                 NavigationTab.SEARCH -> {
                     // Search screen placeholder
-                    SearchScreen()
+                    ServiceProviderMapScreen()
                 }
                 NavigationTab.BOOKINGS -> {
                     // Bookings screen placeholder  
-                    BookingsScreen()
+                    MyBookingsScreen(navController = navController)
                 }
                 NavigationTab.MESSAGES -> {
                     // Messages screen placeholder
-                    MessagesScreen()
+                    ChatScreen(navController = navController)
                 }
                 NavigationTab.PROFILE -> {
-                    // Profile screen placeholder
-                    ProfileScreen()
+                    if (isProviderMode) {
+                        ProviderProfileScreen(
+                            initialProviderProfile = ProviderProfile(
+                                name = "John Plumbing",
+                                memberSince = "March 2023",
+                                completedJobs = 43,
+                                totalJobs = 327,
+                                location = "Weligama, Southern Province",
+                                totalEarnings = "LKR 45,600",
+                                email = "john.obus@email.com",
+                                phoneNumber = "+44 77 123 4567",
+                                isAvailable = true,
+                                responseTime = "1 hour"
+                            ),
+                            onSwitchToCustomerClick = { isProviderMode = false },
+                            onLogoutClick = {},
+                            onServicesClick = {},
+                            onPaymentMethodsClick = {},
+                            onPrivacySecurityClick = {},
+                            onHelpSupportClick = {}
+                        )
+                    } else {
+                        CustomerProfileScreen(
+                            navController = navController,
+                            initialUserProfile = UserProfile(
+                                name = "John Smith",
+                                memberSince = "March 2023",
+                                location = "Weligama, Southern Province",
+                                totalBookings = 24,
+                                completedBookings = 10,
+                                rating = 4.8,
+                                email = "john.doe@email.com",
+                                phoneNumber = "+94 77 123 4567",
+                                joinDate = "March 2023"
+                            ),
+                            onSwitchToProviderClick = { isProviderMode = true },
+                            // onEditProfileClick is now handled internally
+                            onLogoutClick = {},
+                            onFavoritesClick = {},
+                            onPaymentMethodsClick = {},
+                            onPrivacySecurityClick = {},
+                            onHelpSupportClick = {}
+                        )
+                    }
                 }
             }
         }
     }
 }
 
-@Composable
-fun SearchScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        Text("Search Screen")
-    }
-}
-
-@Composable
-fun BookingsScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        Text("Bookings Screen")
-    }
-}
 
 @Composable
 fun MessagesScreen() {
