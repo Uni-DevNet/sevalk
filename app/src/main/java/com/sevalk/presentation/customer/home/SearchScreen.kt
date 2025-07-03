@@ -1,0 +1,369 @@
+package com.sevalk.presentation.customer.home
+
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import androidx.compose.ui.res.painterResource
+import com.sevalk.R
+import com.sevalk.presentation.components.map.MapService
+import com.sevalk.presentation.components.map.ServiceProvider
+import com.sevalk.presentation.components.map.ServiceType
+import com.sevalk.presentation.components.map.SearchBar
+import com.sevalk.presentation.components.map.ServiceTypeFilters
+import com.sevalk.data.repository.ServiceProviderRepository
+import androidx.compose.material.icons.filled.FavoriteBorder
+
+
+@Composable
+fun ServiceProviderMapScreen(
+    onNavigateToBooking: () -> Unit = {}
+) {
+    var selectedServiceType by remember { mutableStateOf(ServiceType.ALL) }
+    var searchQuery by remember { mutableStateOf("") }
+    var selectedProvider by remember { mutableStateOf<ServiceProvider?>(null) }
+    val allServiceProviders = remember { ServiceProviderRepository.getServiceProviders() }
+    val filteredProviders = remember(searchQuery, selectedServiceType) {
+        val searchFiltered = if (searchQuery.isBlank()) {
+            allServiceProviders
+        } else {
+            ServiceProviderRepository.searchServiceProviders(searchQuery)
+        }
+        
+        if (selectedServiceType == ServiceType.ALL) {
+            searchFiltered
+        } else {
+            searchFiltered.filter { it.type == selectedServiceType }
+        }
+    }
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        MapService(
+            serviceProviders = filteredProviders,
+            selectedServiceType = selectedServiceType,
+            showCurrentLocation = true,
+            onMarkerClick = { provider ->
+                selectedProvider = provider
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+
+        SearchBar(
+            query = searchQuery,
+            onQueryChange = { searchQuery = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp)
+                .align(Alignment.TopStart)
+                .offset(y = 60.dp)
+                .zIndex(1f)
+        )
+
+        ServiceTypeFilters(
+            selectedType = selectedServiceType,
+            onTypeSelected = { selectedServiceType = it },
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.TopStart)
+                .offset(y = 120.dp)
+                .zIndex(1f)
+        )
+        selectedProvider?.let { provider ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .zIndex(2f)
+                    .clickable { selectedProvider = null }
+            )
+            
+            ProviderInfoCard(
+                provider = provider,
+                onDismiss = { selectedProvider = null },
+                onBookNow = {
+                    selectedProvider = null
+                    onNavigateToBooking()
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(bottom = 103.dp)
+                    .zIndex(3f)
+            )
+        }
+
+        BottomNavigationBar(
+            modifier = Modifier
+                .fillMaxWidth()
+                .align(Alignment.BottomStart)
+                .zIndex(4f)
+        )
+    }
+}
+
+@Composable
+fun ProviderInfoCard(
+    provider: ServiceProvider,
+    onDismiss: () -> Unit,
+    onBookNow: () -> Unit = {},
+    modifier: Modifier = Modifier
+) {
+    var isFavorite by remember { mutableStateOf(false) }
+    Card(
+        modifier = modifier,
+        elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+            topStart = 16.dp,
+            topEnd = 16.dp,
+            bottomStart = 0.dp,
+            bottomEnd = 0.dp
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(40.dp)
+                    .height(4.dp)
+                    .background(
+                        Color.Gray.copy(alpha = 0.3f),
+                        androidx.compose.foundation.shape.RoundedCornerShape(2.dp)
+                    )
+                    .align(Alignment.CenterHorizontally)
+                    .clickable { onDismiss() }
+            )
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            Text(
+                text = "Provider Details",
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontSize = 20.sp,
+                color = Color.Black,
+                modifier = Modifier.align(Alignment.Start)
+            )
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Profile picture placeholder
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(
+                            Color.Gray.copy(alpha = 0.2f),
+                            androidx.compose.foundation.shape.CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = "Profile",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(30.dp)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.width(12.dp))
+                
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = provider.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = Color.Black
+                    )
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(vertical = 2.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = "Rating",
+                            tint = Color(0xFFFFC107),
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = "${provider.rating} (127)",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.width(12.dp))
+                        Text(
+                            text = "• 0.8 km",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color.Gray
+                        )
+                    }
+                    
+                    Text(
+                        text = provider.type.displayName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFF2196F3)
+                    )
+                }
+                
+                IconButton(onClick = { isFavorite = !isFavorite }) {
+                Icon(
+                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                    contentDescription = "Favorite",
+                    tint = if (isFavorite) Color.Red else Color.Gray
+                )
+            }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            // Service info
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = "Jobs",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "340 jobs",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+                
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.circle_dollar_sign_14_14),
+                        contentDescription = "Price",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = "LKR 800/hr",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            // Action buttons
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Button(
+                    onClick = onBookNow,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFFFFC107)
+                    ),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "Book Now",
+                        color = Color.Black,
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                }
+                
+                OutlinedButton(
+                    onClick = { /* Handle contact */ },
+                    modifier = Modifier.size(48.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.phone_20_20),
+                        contentDescription = "Call",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+                
+                OutlinedButton(
+                    onClick = { /* Handle message */ },
+                    modifier = Modifier.size(48.dp),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f))
+                ) {
+                    Icon(
+                        painter = painterResource(id = R.drawable.message_circle_20_20),
+                        contentDescription = "Message",
+                        tint = Color.Red,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun BottomNavigationBar(modifier: Modifier = Modifier) {
+    NavigationBar(
+        modifier = modifier,
+        containerColor = Color.White
+    ) {
+        val items = listOf(
+            Triple("Home", Icons.Default.Home, false),
+            Triple("Search", Icons.Default.Search, true),
+            Triple("Bookings", Icons.Default.Edit, false),
+            Triple("Messages", Icons.Default.Home, false),
+            Triple("Profile", Icons.Default.Person, false)
+        )
+
+        items.forEach { (title, icon, isSelected) ->
+            NavigationBarItem(
+                selected = isSelected,
+                onClick = { /* Handle navigation */ },
+                icon = {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = title
+                    )
+                },
+                label = {
+                    Text(
+                        text = title,
+                        fontSize = 12.sp
+                    )
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = Color(0xFFFFC107),
+                    selectedTextColor = Color(0xFFFFC107),
+                    unselectedIconColor = Color.Gray,
+                    unselectedTextColor = Color.Gray
+                )
+            )
+        }
+    }
+}
