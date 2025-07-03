@@ -14,7 +14,7 @@ val Pink40 = Color(0xFF7D5260)
 // SevaLK Colors
 
 val S_YELLOW = Color(0xFFF3CA19)
-val S_LIGHT_YELLOW = Color(0xFFFEFCE8)
+val S_LIGHT_YELLOW = Color(0xFFFFF3C2)
 val S_LIGHT_TEXT = Color(0xFF686868)
 val S_INPUT_BACKGROUND = Color(0xFFF0F0F0)
 val S_GREEN = Color(0xFF22C55E)
@@ -25,9 +25,4 @@ val S_BLUE_BACKGROUND = Color(0xFFEFF6FF)
 val S_PLACEHOLDER = Color(0xFF9CA3AF)
 val S_RED = Color(0xFFDD2929)
 val S_DARK_GREEN = Color(0xFF14532D)
-val S_ACCENT_TEXT = Color(0xFF444444) // adjust as needed
-val S_DISABLED_TEXT = Color(0xFF9E9E9E)
-val S_LIGHT_GREY = Color(0xFFF5F5F5)
-val S_TEXT_COLOR = Color(0xFF333333)
-
-
+val S_LIGHT_BLACK = Color(0xFF323232)
