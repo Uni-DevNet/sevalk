@@ -27,6 +27,8 @@ import androidx.compose.ui.unit.sp
 import com.sevalk.R
 import com.sevalk.presentation.customer.profile.EditProfilePopup
 import com.sevalk.presentation.customer.profile.UserProfile
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 
 data class ProviderProfile(
     val name: String,
@@ -45,12 +47,13 @@ data class ProviderProfile(
 @Composable
 fun ProviderProfileScreen(
     initialProviderProfile: ProviderProfile,
-    onSwitchToCustomerClick: () -> Unit,
+    navController: NavController,
     onLogoutClick: () -> Unit,
     onServicesClick: () -> Unit,
     onPaymentMethodsClick: () -> Unit,
     onPrivacySecurityClick: () -> Unit,
-    onHelpSupportClick: () -> Unit
+    onHelpSupportClick: () -> Unit,
+    onSwitchToCustomerClick: () -> Unit
 ) {
     var providerProfile by remember { mutableStateOf(initialProviderProfile) }
     var showEditProfilePopup by remember { mutableStateOf(false) }
@@ -461,12 +464,13 @@ fun ProviderProfileScreenPreview() {
         )
         ProviderProfileScreen(
             initialProviderProfile = sampleProfile,
-            onSwitchToCustomerClick = {},
+            navController = rememberNavController(),
             onLogoutClick = {},
             onServicesClick = {},
             onPaymentMethodsClick = {},
             onPrivacySecurityClick = {},
-            onHelpSupportClick = {}
+            onHelpSupportClick = {},
+            onSwitchToCustomerClick = {}
         )
     }
 }

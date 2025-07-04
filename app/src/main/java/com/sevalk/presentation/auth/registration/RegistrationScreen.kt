@@ -55,6 +55,8 @@ import com.sevalk.ui.theme.SevaLKTheme
 fun RegistrationScreen(
     viewModel: RegistrationViewModel = viewModel(),
     onNavigateToLogin: () -> Unit = {},
+    onNavigateToServiceSelection: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
 ) {
     val uiState = viewModel.uiState.collectAsState().value
 
@@ -93,7 +95,9 @@ fun RegistrationScreen(
                     )
                     3 -> Step3AlmostThere(
                         uiState = uiState,
-                        onEvent = viewModel::onEvent
+                        onEvent = viewModel::onEvent,
+                        onNavigateToServiceSelection = onNavigateToServiceSelection,
+                        onNavigateToHome = onNavigateToHome
                     )
                 }
             }
@@ -290,7 +294,9 @@ fun Step2VerifyEmail(
 @Composable
 fun Step3AlmostThere(
     uiState: RegistrationState,
-    onEvent: (RegistrationEvent) -> Unit
+    onEvent: (RegistrationEvent) -> Unit,
+    onNavigateToServiceSelection: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {}
 ) {
     Column {
         Text(
@@ -364,7 +370,11 @@ fun Step3AlmostThere(
         PrimaryButton(
             text = "Create My Account",
             onClick = {
-                onEvent(RegistrationEvent.SubmitRegistration)
+                if (uiState.userType == UserType.SERVICE_PROVIDER) {
+                    onEvent(RegistrationEvent.SubmitServiceProviderRegistration(onNavigateToServiceSelection))
+                } else {
+                    onEvent(RegistrationEvent.SubmitCustomerRegistration(onNavigateToHome))
+                }
             }
         )
     }

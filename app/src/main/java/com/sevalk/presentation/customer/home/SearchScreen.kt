@@ -66,7 +66,7 @@ fun ServiceProviderMapScreen(
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
                 .align(Alignment.TopStart)
-                .offset(y = 60.dp)
+                .offset(y = 10.dp)
                 .zIndex(1f)
         )
 
@@ -76,7 +76,7 @@ fun ServiceProviderMapScreen(
             modifier = Modifier
                 .fillMaxWidth()
                 .align(Alignment.TopStart)
-                .offset(y = 120.dp)
+                .offset(y = 80.dp)
                 .zIndex(1f)
         )
         selectedProvider?.let { provider ->

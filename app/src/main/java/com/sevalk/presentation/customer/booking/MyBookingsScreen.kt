@@ -139,7 +139,12 @@ fun MyBookingsScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(filteredBookings) { booking ->
-                BookingCard(booking = booking)
+                BookingCard(
+                    booking = booking,
+                    onBookingClick = { bookingId ->
+                        navController.navigate("booking_details/$bookingId")
+                    }
+                )
             }
             
             item {
@@ -174,12 +179,13 @@ fun FilterChip(
 @Composable
 fun BookingCard(
     booking: MyBooking,
+    onBookingClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .clickable { /* Navigate to booking details */ },
+            .clickable { onBookingClick(booking.id) },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -269,7 +275,7 @@ fun BookingCard(
                             modifier = Modifier.size(16.dp)
                         )
                     }
-                    
+
                     IconButton(
                         onClick = { /* Handle message */ },
                         modifier = Modifier.size(32.dp)
@@ -296,13 +302,3 @@ fun BookingCard(
 }
 
 
-@Preview
-@Composable
-fun MyBookingsScreenPreview() {
-    SevaLKTheme {
-        MyBookingsScreen(
-            navController = NavController(context = LocalContext.current),
-            modifier = Modifier.fillMaxSize()
-        )
-    }
-}

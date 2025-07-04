@@ -317,20 +317,34 @@ fun PaymentScreen(
 
 @Composable
 fun PaymentMethodOption(
-    iconRes: Int, // Changed to Int for drawable resource ID
+    iconRes: Int,
     title: String,
     description: String,
     feeInfo: String,
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    // Determine colors based on selection and payment method type
+    val borderColor = if (isSelected) {
+        when (title) {
+            "Cash Payment" -> S_GREEN
+            "Credit/Debit Card" -> S_BLUE
+            else -> S_BLUE
+        }
+    } else {
+        null
+    }
+
+    val iconTint = if (title == "Cash Payment") S_GREEN else S_BLUE
+    val selectedCheckmarkTint = if (title == "Cash Payment") S_GREEN else S_BLUE
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
         shape = RoundedCornerShape(8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = if (isSelected) BorderStroke(2.dp, S_BLUE) else null, // Border when selected using S_BLUE
+        border = borderColor?.let { BorderStroke(2.dp, it) },
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -340,9 +354,9 @@ fun PaymentMethodOption(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                painter = painterResource(id = iconRes), // Load the drawable resource here
+                painter = painterResource(id = iconRes),
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary, // Use theme primary color (S_YELLOW)
+                tint = iconTint,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -354,7 +368,7 @@ fun PaymentMethodOption(
                     Icon(
                         imageVector = Icons.Default.CheckCircle,
                         contentDescription = "Check",
-                        tint = S_GREEN, // Use your S_GREEN
+                        tint = S_GREEN,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(4.dp))
@@ -366,7 +380,7 @@ fun PaymentMethodOption(
                 Icon(
                     imageVector = Icons.Default.CheckCircle,
                     contentDescription = "Selected",
-                    tint = S_BLUE, // Use your S_BLUE for the selected checkmark
+                    tint = selectedCheckmarkTint,
                     modifier = Modifier.size(24.dp)
                 )
             }

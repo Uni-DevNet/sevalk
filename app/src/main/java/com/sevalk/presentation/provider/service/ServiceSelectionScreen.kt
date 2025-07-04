@@ -39,7 +39,10 @@ import com.sevalk.ui.theme.SevaLKTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ServiceSelectionScreen(viewModel: ServiceViewModel = viewModel()) {
+fun ServiceSelectionScreen(
+    viewModel: ServiceViewModel = viewModel(),
+    onNavigateToNext: () -> Unit = {}
+) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedCount = uiState.selectedServiceCount
 
@@ -53,7 +56,7 @@ fun ServiceSelectionScreen(viewModel: ServiceViewModel = viewModel()) {
             )
         },
         bottomBar = {
-            BottomBar(selectedCount = selectedCount, onComplete = { /* TODO */ })
+            BottomBar(selectedCount = selectedCount, onComplete = onNavigateToNext)
         }
     ) { paddingValues ->
         Column(

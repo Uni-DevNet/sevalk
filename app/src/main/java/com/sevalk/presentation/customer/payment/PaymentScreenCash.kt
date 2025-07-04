@@ -51,20 +51,6 @@ import com.sevalk.ui.theme.S_LIGHT_TEXT
 import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 
-// Enum for Payment Methods (Re-added, as it's crucial for PaymentMethodOption)
-enum class CashPaymentMethod {
-    Cash,
-    CreditDebitCard
-}
-
-// Data class for Card Details (Not strictly used in CashPaymentScreen, but good to keep if from a shared context)
-data class CashDetails(
-    val cardNumber: String,
-    val expiryDate: String,
-    val cvv: String,
-    val cardholderName: String
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CashPaymentScreen( // Renamed to ensure it's distinct if PaymentScreen also exists
@@ -277,82 +263,6 @@ fun CashInstructionPoint(text: String) {
         )
     }
 }
-
-// PaymentMethodOption (Re-added as it's needed for the "Choose Payment Method" section)
-@Composable
-fun PaymentMethodOptionCash(
-    iconRes: Int, // Drawable resource ID
-    title: String,
-    description: String,
-    feeInfo: String,
-    isSelected: Boolean,
-    onClick: () -> Unit
-) {
-    // Determine colors based on selection and payment method type
-    val borderColor = if (isSelected) {
-        when (title) { // Assuming "Cash Payment" for green border, "Credit/Debit Card" for blue border
-            "Cash Payment" -> S_GREEN
-            "Credit/Debit Card" -> S_BLUE
-            else -> S_BLUE // Default or other types
-        }
-    } else {
-        null // No border when not selected
-    }
-
-    val iconTint = if (title == "Cash Payment") S_GREEN else S_BLUE // Green for cash, blue for card
-    val selectedCheckmarkTint = if (title == "Cash Payment") S_GREEN else S_BLUE // Green for cash check, blue for card check
-
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = borderColor?.let { BorderStroke(2.dp, it) }, // Apply border if it's not null
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Icon from drawable resource
-            Icon(
-                painter = painterResource(id = iconRes),
-                contentDescription = null,
-                tint = iconTint, // Apply conditional tint
-                modifier = Modifier.size(24.dp)
-            )
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface))
-                Text(text = description, style = MaterialTheme.typography.bodySmall.copy(color = S_LIGHT_TEXT))
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        imageVector = Icons.Default.CheckCircle,
-                        contentDescription = "Check",
-                        tint = S_GREEN, // Fee info checkmark is always green
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(text = feeInfo, style = MaterialTheme.typography.bodySmall.copy(color = S_GREEN))
-                }
-            }
-
-            if (isSelected) {
-                Icon(
-                    imageVector = Icons.Default.CheckCircle,
-                    contentDescription = "Selected",
-                    tint = selectedCheckmarkTint, // Apply conditional tint for selected checkmark
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-        }
-    }
-}
-
 
 @Preview(showBackground = true)
 @Composable

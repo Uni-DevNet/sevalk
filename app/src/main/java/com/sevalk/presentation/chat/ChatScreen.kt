@@ -21,9 +21,6 @@ import com.sevalk.ui.theme.S_GREEN
 import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.R
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
-import com.sevalk.presentation.navigation.Screen
 
 data class ChatItem(
     val name: String,
@@ -36,7 +33,7 @@ data class ChatItem(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(
-    navController: NavController,
+    onChatItemClick: (ChatItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val chatItems = remember {
@@ -57,7 +54,7 @@ fun ChatScreen(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(vertical = 16.dp),
+                .padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -92,11 +89,7 @@ fun ChatScreen(
             items(chatItems) { chatItem ->
                 ChatItemRow(
                     chatItem = chatItem,
-                    onClick = { 
-                        // TODO: Navigate to individual chat when route is implemented
-                        // For now, this is commented out to prevent crashes
-                        // navController.navigate("chat_detail/${chatItem.name}")
-                    }
+                    onClick = { onChatItemClick(chatItem) }
                 )
             }
         }
@@ -198,8 +191,7 @@ fun ChatItemRow(
 @Composable
 fun ChatScreenPreview() {
     SevaLKTheme {
-        // ChatScreen(navController = rememberNavController()) // Uncomment this line when using with a NavController
-        ChatScreen(navController = rememberNavController())
+        ChatScreen()
     }
 }
 

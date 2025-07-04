@@ -13,4 +13,10 @@ sealed class Screen(val route: String) {
     object Inbox : Screen("inbox")
     object ProviderProfile : Screen("provider_profile")
     object ProviderHome : Screen("provider_home")
+    object ServiceSelection : Screen("service_selection")
+    object SetLocation : Screen("set_location")
+    object CreateServiceBill : Screen("create_service_bill")
+    object BookingDetails : Screen("booking_details/{bookingId}") {
+        fun createRoute(bookingId: String) = "booking_details/$bookingId"
+    }
 }

@@ -4,8 +4,8 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sevalk.presentation.chat.ChatScreen
 import com.sevalk.presentation.customer.booking.BookingScreen
 import com.sevalk.presentation.customer.booking.MyBookingsScreen
@@ -14,6 +14,7 @@ import com.sevalk.presentation.customer.home.ServiceProviderMapScreen
 import com.sevalk.presentation.customer.profile.CustomerProfileScreen
 import com.sevalk.presentation.customer.profile.UserProfile
 import com.sevalk.presentation.provider.home.ProviderHomeScreen
+import com.sevalk.presentation.provider.jobs.JobsScreen
 import com.sevalk.presentation.provider.profile.ProviderProfile
 import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 
@@ -22,15 +23,104 @@ import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 fun MainNavigation(
     navController: NavController,
 ) {
-    var selectedTab by remember { mutableStateOf(NavigationTab.HOME) }
+    var customerSelectedTab by remember { mutableStateOf(CustomerNavigationTab.HOME) }
+    var providerSelectedTab by remember { mutableStateOf(ProviderNavigationTab.DASHBOARD) }
     var isProviderMode by remember { mutableStateOf(false) }
+    var showCreateBillScreen by remember { mutableStateOf(false) }
+    var selectedJobForBill by remember { mutableStateOf<com.sevalk.data.models.Job?>(null) }
     
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+    
+    // Function to switch to provider mode
+    val switchToProviderMode = {
+        isProviderMode = true
+        // If switching from customer profile, go to provider profile (BUSINESS tab)
+        providerSelectedTab = if (customerSelectedTab == CustomerNavigationTab.PROFILE) {
+            ProviderNavigationTab.BUSINESS
+        } else {
+            ProviderNavigationTab.DASHBOARD
+        }
+    }
+    
+    // Function to switch to customer mode
+    val switchToCustomerMode = {
+        isProviderMode = false
+        customerSelectedTab = if (providerSelectedTab == ProviderNavigationTab.BUSINESS) {
+            CustomerNavigationTab.PROFILE
+        } else {
+            CustomerNavigationTab.HOME
+        }
+    }
+
+    // Show CreateServiceBillScreen if needed
+    if (showCreateBillScreen && selectedJobForBill != null) {
+        com.sevalk.presentation.provider.jobs.CreateServiceBillScreen(
+            job = selectedJobForBill!!,
+            onBackClick = {
+                showCreateBillScreen = false
+                selectedJobForBill = null
+            },
+            onConfirmBill = {
+                // Handle bill confirmation
+                showCreateBillScreen = false
+                selectedJobForBill = null
+            }
+        )
+        return
+    }
+
     Scaffold(
         bottomBar = {
-            BottomNavigationBar(
-                selectedTab = selectedTab,
-                onTabSelected = { selectedTab = it }
-            )
+            if (isProviderMode) {
+                ProviderBottomNavigationBar(
+                    selectedTab = providerSelectedTab,
+                    onTabSelected = { tab ->
+                        providerSelectedTab = tab
+                        when (tab) {
+                            ProviderNavigationTab.DASHBOARD -> {
+                                // Stay on current screen, just update tab
+                            }
+                            ProviderNavigationTab.JOBS -> {
+                                // Navigate to provider jobs screen
+                            }
+                            ProviderNavigationTab.SCHEDULE -> {
+                                // Navigate to provider schedule screen
+                            }
+                            ProviderNavigationTab.MESSAGES -> {
+                                // Navigate to provider messages screen
+                            }
+                            ProviderNavigationTab.BUSINESS -> {
+                                // Navigate to provider business/profile screen
+                            }
+                        }
+                    }
+                )
+            } else {
+                CustomerBottomNavigationBar(
+                    selectedTab = customerSelectedTab,
+                    onTabSelected = { tab ->
+                        customerSelectedTab = tab
+                        when (tab) {
+                            CustomerNavigationTab.HOME -> {
+                                // Stay on current screen, just update tab
+                            }
+                            CustomerNavigationTab.SEARCH -> {
+                                // Navigate to search screen
+                            }
+                            CustomerNavigationTab.BOOKINGS -> {
+                                // Navigate to bookings screen
+                            }
+                            CustomerNavigationTab.MESSAGES -> {
+                                // Navigate to messages screen
+                            }
+                            CustomerNavigationTab.PROFILE -> {
+                                // Navigate to profile screen
+                            }
+                        }
+                    }
+                )
+            }
         }
     ) { paddingValues ->
         Box(
@@ -38,28 +128,31 @@ fun MainNavigation(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            when (selectedTab) {
-                NavigationTab.HOME -> {
-                    if (isProviderMode) {
+            if (isProviderMode) {
+                when (providerSelectedTab) {
+                    ProviderNavigationTab.DASHBOARD -> {
                         ProviderHomeScreen(navController = navController)
-                    } else {
-                        HomeScreen(navController = navController)
                     }
-                }
-                NavigationTab.SEARCH -> {
-                    // Search screen placeholder
-                    ServiceProviderMapScreen()
-                }
-                NavigationTab.BOOKINGS -> {
-                    // Bookings screen placeholder  
-                    MyBookingsScreen(navController = navController)
-                }
-                NavigationTab.MESSAGES -> {
-                    // Messages screen placeholder
-                    ChatScreen(navController = navController)
-                }
-                NavigationTab.PROFILE -> {
-                    if (isProviderMode) {
+                    ProviderNavigationTab.JOBS -> {
+                        JobsScreen(
+                            onNavigateToCreateBill = { job ->
+                                selectedJobForBill = job
+                                showCreateBillScreen = true
+                            }
+                        )
+                    }
+                    ProviderNavigationTab.SCHEDULE -> {
+                        // Schedule screen placeholder
+                        ServiceProviderMapScreen()
+                    }
+                    ProviderNavigationTab.MESSAGES -> {
+                        ChatScreen(
+                            onChatItemClick = { chatItem ->
+                                navController.navigate("inbox/${chatItem.name}")
+                            }
+                        )
+                    }
+                    ProviderNavigationTab.BUSINESS -> {
                         ProviderProfileScreen(
                             initialProviderProfile = ProviderProfile(
                                 name = "John Plumbing",
@@ -73,14 +166,38 @@ fun MainNavigation(
                                 isAvailable = true,
                                 responseTime = "1 hour"
                             ),
-                            onSwitchToCustomerClick = { isProviderMode = false },
                             onLogoutClick = {},
                             onServicesClick = {},
                             onPaymentMethodsClick = {},
                             onPrivacySecurityClick = {},
-                            onHelpSupportClick = {}
+                            onHelpSupportClick = {},
+                            navController = navController,
+                            onSwitchToCustomerClick = switchToCustomerMode
                         )
-                    } else {
+                    }
+                }
+            } else {
+                when (customerSelectedTab) {
+                    CustomerNavigationTab.HOME -> {
+                        HomeScreen(
+                            navController = navController,
+                            onSwitchToProvider = switchToProviderMode
+                        )
+                    }
+                    CustomerNavigationTab.SEARCH -> {
+                        ServiceProviderMapScreen()
+                    }
+                    CustomerNavigationTab.BOOKINGS -> {
+                        MyBookingsScreen(navController = navController)
+                    }
+                    CustomerNavigationTab.MESSAGES -> {
+                        ChatScreen(
+                            onChatItemClick = { chatItem ->
+                                navController.navigate("inbox/${chatItem.name}")
+                            }
+                        )
+                    }
+                    CustomerNavigationTab.PROFILE -> {
                         CustomerProfileScreen(
                             navController = navController,
                             initialUserProfile = UserProfile(
@@ -94,8 +211,7 @@ fun MainNavigation(
                                 phoneNumber = "+94 77 123 4567",
                                 joinDate = "March 2023"
                             ),
-                            onSwitchToProviderClick = { isProviderMode = true },
-                            // onEditProfileClick is now handled internally
+                            onSwitchToProviderClick = switchToProviderMode,
                             onLogoutClick = {},
                             onFavoritesClick = {},
                             onPaymentMethodsClick = {},
@@ -106,26 +222,5 @@ fun MainNavigation(
                 }
             }
         }
-    }
-}
-
-
-@Composable
-fun MessagesScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        Text("Messages Screen")
-    }
-}
-
-@Composable
-fun ProfileScreen() {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = androidx.compose.ui.Alignment.Center
-    ) {
-        Text("Profile Screen")
     }
 }

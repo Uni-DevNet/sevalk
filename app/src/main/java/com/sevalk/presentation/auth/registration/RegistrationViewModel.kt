@@ -39,6 +39,14 @@ class RegistrationViewModel : ViewModel() {
                 // Here you would call your repository/API to create the account
                 println("Registration Submitted: ${_uiState.value}")
             }
+            is RegistrationEvent.SubmitServiceProviderRegistration -> {
+                event.onNavigateToServiceSelection()
+            }
+            is RegistrationEvent.SubmitCustomerRegistration -> {
+                // Here you would call your repository/API to create the customer account
+                println("Customer Registration Submitted: ${_uiState.value}")
+                event.onNavigateToHome()
+            }
         }
     }
 }

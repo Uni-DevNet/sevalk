@@ -52,7 +52,6 @@ fun ProviderHomeScreen(navController: NavController) {
             .fillMaxSize()
             .background(Color.White)
             .padding(16.dp)
-            .padding(top = 32.dp)
     ) {
         item {
             // Header
@@ -98,7 +97,12 @@ fun ProviderHomeScreen(navController: NavController) {
             Row(modifier = Modifier.fillMaxWidth()) {
                 com.sevalk.presentation.components.common.PrimaryButton(
                     text = "Find Services",
-                    onClick = { navController.navigate(Screen.Home.route) },
+                    onClick = { 
+                        navController.navigate(Screen.Home.route) {
+                            // Clear back stack to prevent going back to provider home
+                            popUpTo(Screen.ProviderHome.route) { inclusive = false }
+                        }
+                    },
                     modifier = Modifier.weight(1f),
                     style = if (selectedTab == 0) com.sevalk.presentation.components.common.PrimaryButtonStyle.TEXT else com.sevalk.presentation.components.common.PrimaryButtonStyle.OUTLINE,
                     backgroundColor = if (selectedTab == 0) Color(0xFFFFC107) else Color.Gray.copy(alpha = 0.2f),
@@ -111,7 +115,7 @@ fun ProviderHomeScreen(navController: NavController) {
                     modifier = Modifier.weight(1f),
                     style = if (selectedTab == 1) com.sevalk.presentation.components.common.PrimaryButtonStyle.TEXT else com.sevalk.presentation.components.common.PrimaryButtonStyle.OUTLINE,
                     backgroundColor = if (selectedTab == 1) Color(0xFFFFC107) else Color(0xFFF5F5F5),
-                    foregroundColor = if (selectedTab == 1) Color.Black else Color(0xFFFFC107)
+                    foregroundColor = if (selectedTab == 1) Color.White else Color(0xFFFFC107)
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))

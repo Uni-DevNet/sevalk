@@ -65,6 +65,7 @@ data class ProviderItem(
 @Composable
 fun HomeScreen(
     navController: NavController,
+    onSwitchToProvider: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     var searchQuery by remember { mutableStateOf("") }
@@ -169,7 +170,7 @@ fun HomeScreen(
         Row(modifier = Modifier.fillMaxWidth()) {
             PrimaryButton(
                 text = "Find Services",
-                onClick = { /* TODO */ },
+                onClick = { /* Current screen - no action needed */ },
                 modifier = Modifier.weight(1f),
                 style = PrimaryButtonStyle.TEXT
             )
@@ -177,7 +178,7 @@ fun HomeScreen(
             PrimaryButton(
                 text = "My Business",
                 onClick = {
-                    navController.navigate(Screen.ProviderHome.route)
+                    onSwitchToProvider?.invoke()
                 },
                 modifier = Modifier.weight(1f),
                 style = PrimaryButtonStyle.OUTLINE,

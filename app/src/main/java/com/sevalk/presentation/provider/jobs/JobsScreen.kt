@@ -21,7 +21,8 @@ import com.sevalk.ui.theme.SevaLKTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobsScreen(
-    viewModel: JobsViewModel = viewModel()
+    viewModel: JobsViewModel = viewModel(),
+    onNavigateToCreateBill: (Job) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     var showBottomSheet by remember { mutableStateOf(false) }
@@ -54,7 +55,11 @@ fun JobsScreen(
                             selectedJob = state.jobs.find { it.id == jobId }
                             showBottomSheet = true
                         },
-                        onCreateBill = { jobId -> /* Handle create bill */ }
+                        onCreateBill = { jobId -> 
+                            state.jobs.find { it.id == jobId }?.let { job ->
+                                onNavigateToCreateBill(job)
+                            }
+                        }
                     )
                 }
                 JobStatus.DONE -> {
@@ -113,3 +118,4 @@ fun JobsScreenPreview() {
         JobsScreen()
     }
 }
+

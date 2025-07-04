@@ -14,4 +14,6 @@ sealed class RegistrationEvent {
     object TogglePasswordVisibility : RegistrationEvent()
     object ToggleConfirmPasswordVisibility : RegistrationEvent()
     object SubmitRegistration : RegistrationEvent()
+    data class SubmitServiceProviderRegistration(val onNavigateToServiceSelection: () -> Unit) : RegistrationEvent()
+    data class SubmitCustomerRegistration(val onNavigateToHome: () -> Unit) : RegistrationEvent()
 }

@@ -160,7 +160,10 @@ fun SetLocationScreen(
                 // Complete Setup Button
                 PrimaryButton(
                     text = "Complete Setup",
-                    onClick = viewModel::completeSetup
+                    onClick = {
+                        viewModel.completeSetup()
+                        onSetupComplete()
+                    }
                 )
             }
             
