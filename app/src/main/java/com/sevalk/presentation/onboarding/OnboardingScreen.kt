@@ -151,7 +151,7 @@ private fun OnboardingPageContent(page: OnboardingPage, currentPage: Int, totalP
                 if (page.titleBefore.isNotEmpty()) {
                     Text(
                         text = page.titleBefore,
-                        fontSize = 28.sp,
+                        fontSize = 30.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color.Black,
                         textAlign = TextAlign.Start
@@ -159,17 +159,45 @@ private fun OnboardingPageContent(page: OnboardingPage, currentPage: Int, totalP
                 }
                 Text(
                     text = page.highlightedWord,
-                    fontSize = 28.sp,
+                    fontSize = 30.sp,
                     fontWeight = FontWeight.Bold,
                     color = Color(0xFFFFD700),
                     textAlign = TextAlign.Start
                 )
+            } else if (currentPage == 2) {
+                if (page.titleBefore.isNotEmpty()) {
+                    Text(
+                        text = page.titleBefore,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        textAlign = TextAlign.Start
+                    )
+                }
+                Row {
+                    Text(
+                        text = page.highlightedWord,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFFFFD700),
+                        textAlign = TextAlign.Start
+                    )
+                    if (page.titleAfter.isNotEmpty()) {
+                        Text(
+                            text = " ${page.titleAfter}",
+                            fontSize = 30.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            textAlign = TextAlign.Start
+                        )
+                    }
+                }
             } else {
                 Row {
                     if (page.titleBefore.isNotEmpty()) {
                         Text(
                             text = "${page.titleBefore} ",
-                            fontSize = 28.sp,
+                            fontSize = 30.sp,
                             fontWeight = FontWeight.Bold,
                             color = Color.Black,
                             textAlign = TextAlign.Start
@@ -177,22 +205,21 @@ private fun OnboardingPageContent(page: OnboardingPage, currentPage: Int, totalP
                     }
                     Text(
                         text = page.highlightedWord,
-                        fontSize = 28.sp,
+                        fontSize = 30.sp,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFFFD700),
                         textAlign = TextAlign.Start
                     )
                 }
-            }
-            
-            if (page.titleAfter.isNotEmpty()) {
-                Text(
-                    text = page.titleAfter,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black,
-                    textAlign = TextAlign.Start
-                )
+                if (page.titleAfter.isNotEmpty()) {
+                    Text(
+                        text = page.titleAfter,
+                        fontSize = 30.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.Black,
+                        textAlign = TextAlign.Start
+                    )
+                }
             }
         }
 
@@ -200,7 +227,7 @@ private fun OnboardingPageContent(page: OnboardingPage, currentPage: Int, totalP
 
         Text(
             text = page.description,
-            fontSize = 16.sp,
+            fontSize = 17.sp,
             color = Color.Gray,
             textAlign = TextAlign.Start,
             lineHeight = 24.sp,

@@ -98,7 +98,7 @@ fun ServiceProviderMapScreen(
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(bottom = 103.dp)
+                    .padding(bottom = 1.dp)
                     .zIndex(3f)
             )
         }
@@ -318,47 +318,6 @@ fun ProviderInfoCard(
                     )
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun BottomNavigationBar(modifier: Modifier = Modifier) {
-    NavigationBar(
-        modifier = modifier,
-        containerColor = Color.White
-    ) {
-        val items = listOf(
-            Triple("Home", Icons.Default.Home, false),
-            Triple("Search", Icons.Default.Search, true),
-            Triple("Bookings", Icons.Default.Edit, false),
-            Triple("Messages", Icons.Default.Home, false),
-            Triple("Profile", Icons.Default.Person, false)
-        )
-
-        items.forEach { (title, icon, isSelected) ->
-            NavigationBarItem(
-                selected = isSelected,
-                onClick = {},
-                icon = {
-                    Icon(
-                        imageVector = icon,
-                        contentDescription = title
-                    )
-                },
-                label = {
-                    Text(
-                        text = title,
-                        fontSize = 12.sp
-                    )
-                },
-                colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = Color(0xFFFFC107),
-                    selectedTextColor = Color(0xFFFFC107),
-                    unselectedIconColor = Color.Gray,
-                    unselectedTextColor = Color.Gray
-                )
-            )
         }
     }
 }

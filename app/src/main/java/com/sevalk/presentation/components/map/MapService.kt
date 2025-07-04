@@ -5,6 +5,8 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Location
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -25,6 +27,8 @@ import com.google.maps.android.compose.MapProperties
 import com.google.maps.android.compose.MapUiSettings
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
 import com.sevalk.R
 
 data class ServiceProvider(
@@ -75,32 +79,52 @@ fun MapService(
         }
     }
 
-    GoogleMap(
-        modifier = modifier,
-        cameraPositionState = cameraPositionState,
-        uiSettings = MapUiSettings(myLocationButtonEnabled = showCurrentLocation),
-        properties = MapProperties(
-            isMyLocationEnabled = showCurrentLocation && currentLocation != null
-        )
-    ) {
-        serviceProviders.forEach { provider ->
-            if (selectedServiceType == ServiceType.ALL || provider.type == selectedServiceType) {
-                val iconResId = when (provider.type) {
-                    ServiceType.PLUMBING -> R.drawable.map4_24
-                    ServiceType.ELECTRICAL -> R.drawable.map3_24
-                    ServiceType.CLEANING -> R.drawable.map1_24
-                    ServiceType.ALL -> R.drawable.map2_24
-                }
-
-                Marker(
-                    state = MarkerState(LatLng(provider.latitude, provider.longitude)),
-                    title = provider.name,
-                    snippet = provider.type.displayName,
-                    icon = BitmapDescriptorFactory.fromResource(iconResId),
-                    onClick = {
-                        onMarkerClick?.invoke(provider)
-                        false
+    Box(modifier = modifier) {
+        GoogleMap(
+            modifier = Modifier.fillMaxSize(),
+            cameraPositionState = cameraPositionState,
+            uiSettings = MapUiSettings(myLocationButtonEnabled = false),
+            properties = MapProperties(
+                isMyLocationEnabled = showCurrentLocation && currentLocation != null
+            )
+        ) {
+            serviceProviders.forEach { provider ->
+                if (selectedServiceType == ServiceType.ALL || provider.type == selectedServiceType) {
+                    val iconResId = when (provider.type) {
+                        ServiceType.PLUMBING -> R.drawable.map4_24
+                        ServiceType.ELECTRICAL -> R.drawable.map3_24
+                        ServiceType.CLEANING -> R.drawable.map1_24
+                        ServiceType.ALL -> R.drawable.map2_24
                     }
+
+                    Marker(
+                        state = MarkerState(LatLng(provider.latitude, provider.longitude)),
+                        title = provider.name,
+                        snippet = provider.type.displayName,
+                        icon = BitmapDescriptorFactory.fromResource(iconResId),
+                        onClick = {
+                            onMarkerClick?.invoke(provider)
+                            false
+                        }
+                    )
+                }
+            }
+        }
+
+        if (showCurrentLocation) {
+            FloatingActionButton(
+                onClick = {
+                    currentLocation?.let { location ->
+                        cameraPositionState.position = CameraPosition.fromLatLngZoom(location, initialZoom)
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomStart)
+                    .padding(16.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOn,
+                    contentDescription = "Current Location"
                 )
             }
         }
