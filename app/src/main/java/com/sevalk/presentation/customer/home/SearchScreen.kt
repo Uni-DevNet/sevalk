@@ -1,8 +1,11 @@
 package com.sevalk.presentation.customer.home
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -24,10 +27,13 @@ import com.sevalk.presentation.components.common.PrimaryButton
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.ui.res.painterResource
 import com.sevalk.ui.theme.S_YELLOW
-
+import androidx.navigation.NavController
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 
 @Composable
 fun ServiceProviderMapScreen(
+    navController: NavController? = null,
     onNavigateToBooking: () -> Unit = {}
 ) {
     var selectedServiceType by remember { mutableStateOf(ServiceType.ALL) }
@@ -88,19 +94,33 @@ fun ServiceProviderMapScreen(
                     .clickable { selectedProvider = null }
             )
             
-            ProviderInfoCard(
-                provider = provider,
-                onDismiss = { selectedProvider = null },
-                onBookNow = {
-                    selectedProvider = null
-                    onNavigateToBooking()
-                },
+            AnimatedVisibility(
+                visible = selectedProvider != null,
+                enter = slideInVertically(
+                    initialOffsetY = { it },
+                    animationSpec = tween(300)
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { it },
+                    animationSpec = tween(300)
+                ),
                 modifier = Modifier
                     .align(Alignment.BottomCenter)
                     .fillMaxWidth()
-                    .padding(bottom = 1.dp)
                     .zIndex(3f)
-            )
+            ) {
+                ProviderInfoCard(
+                    provider = provider,
+                    onDismiss = { selectedProvider = null },
+                    onBookNow = {
+                        selectedProvider = null
+                        navController?.navigate("booking") ?: onNavigateToBooking()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 1.dp)
+                )
+            }
         }
     }
 }
@@ -117,7 +137,7 @@ fun ProviderInfoCard(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = androidx.compose.foundation.shape.RoundedCornerShape(
+        shape = RoundedCornerShape(
             topStart = 16.dp,
             topEnd = 16.dp,
             bottomStart = 0.dp,
@@ -135,7 +155,7 @@ fun ProviderInfoCard(
                     .height(4.dp)
                     .background(
                         Color.Gray.copy(alpha = 0.3f),
-                        androidx.compose.foundation.shape.RoundedCornerShape(2.dp)
+                        RoundedCornerShape(2.dp)
                     )
                     .align(Alignment.CenterHorizontally)
                     .clickable { onDismiss() }

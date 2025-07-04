@@ -143,7 +143,7 @@ fun MainNavigation(
                     }
                     ProviderNavigationTab.SCHEDULE -> {
                         // Schedule screen placeholder
-                        ServiceProviderMapScreen()
+                        ServiceProviderMapScreen(navController = navController)
                     }
                     ProviderNavigationTab.MESSAGES -> {
                         ChatScreen(
@@ -185,7 +185,7 @@ fun MainNavigation(
                         )
                     }
                     CustomerNavigationTab.SEARCH -> {
-                        ServiceProviderMapScreen()
+                        ServiceProviderMapScreen(navController = navController)
                     }
                     CustomerNavigationTab.BOOKINGS -> {
                         MyBookingsScreen(navController = navController)
