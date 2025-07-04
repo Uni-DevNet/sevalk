@@ -119,7 +119,9 @@ fun SevaLKNavigation(
         
         composable(Screen.Booking.route) {
             BookingScreen(
-
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
         
