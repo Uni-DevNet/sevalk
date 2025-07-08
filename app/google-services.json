@@ -1,0 +1,40 @@
+{
+  "project_info": {
+    "project_number": "228158932129",
+    "firebase_url": "https://seva-lk-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "seva-lk",
+    "storage_bucket": "seva-lk.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:228158932129:android:fe887d4a2c15ed3d7bdce0",
+        "android_client_info": {
+          "package_name": "com.sevalk"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "228158932129-2d2fvhu2k2g0a7aba6u4be5ro7uqi9eu.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBh3ze0vyV0mH9YumQfTBwDuEfvKCMSMbE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "228158932129-2d2fvhu2k2g0a7aba6u4be5ro7uqi9eu.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
