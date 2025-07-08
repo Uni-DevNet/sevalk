@@ -5,8 +5,7 @@ data class ServiceProvider(
     val userId: String = "", // Reference to User
     val businessName: String = "",
     val description: String = "",
-    val serviceCategories: List<String> = emptyList(), // Category IDs
-    val services: List<ServiceOffering> = emptyList(),
+    val services: List<Service> = emptyList(),
     val serviceRadius: Double = 10.0, // in kilometers
     val serviceLocation: ServiceLocation = ServiceLocation(),
     val experience: Int = 0, // Years of experience
@@ -19,16 +18,6 @@ data class ServiceProvider(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val status: ProviderStatus = ProviderStatus.PENDING
-)
-
-data class ServiceOffering(
-    val serviceId: String = "",
-    val serviceName: String = "",
-    val description: String = "",
-    val basePrice: Double = 0.0,
-    val pricingModel: PricingModel = PricingModel.FIXED,
-    val estimatedDuration: String = "", // e.g., "2-3 hours"
-    val isActive: Boolean = true
 )
 
 enum class ProviderStatus {
