@@ -5,7 +5,10 @@ import com.sevalk.data.models.ServiceCategory
 data class ServiceUiState(
     val serviceCategories: List<ServiceCategory> = emptyList(),
     val searchQuery: String = "",
-    val serviceProviderName: String = ""
+    val serviceProviderName: String = "",
+    val isLoading: Boolean = false,
+    val error: String? = null,
+    val isServicesSubmitted: Boolean = false
 ) {
     val selectedServiceCount: Int
         get() = serviceCategories.sumOf { category -> category.services.count { it.isSelected } }

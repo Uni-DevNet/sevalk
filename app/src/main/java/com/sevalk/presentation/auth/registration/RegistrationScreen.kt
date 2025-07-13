@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -27,8 +28,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -237,6 +244,9 @@ fun Step2VerifyEmail(
     uiState: RegistrationState,
     onEvent: (RegistrationEvent) -> Unit
 ) {
+    val focusRequesters = remember { List(6) { FocusRequester() } }
+    val clipboardManager = LocalClipboardManager.current
+    
     Column {
         Text(
             text = "We've sent a verification email to ${uiState.email}. Please check your inbox (and spam folder) and click the verification link or enter the code below.",
@@ -259,13 +269,50 @@ fun Step2VerifyEmail(
             for (i in 0..5) {
                 TextField(
                     value = uiState.verificationCode[i],
-                    onValueChange = { onEvent(RegistrationEvent.VerificationCodeChanged(i, it)) },
+                    onValueChange = { newValue ->
+                        // Handle paste operation
+                        if (newValue.length > 1) {
+                            val digits = newValue.filter { it.isDigit() }.take(6)
+                            for (j in digits.indices) {
+                                if (i + j < 6) {
+                                    onEvent(RegistrationEvent.VerificationCodeChanged(i + j, digits[j].toString()))
+                                }
+                            }
+                            // Focus the next empty field or the last field
+                            val nextFocusIndex = (i + digits.length).coerceAtMost(5)
+                            focusRequesters[nextFocusIndex].requestFocus()
+                        } else {
+                            // Handle single character input
+                            val filteredValue = newValue.filter { it.isDigit() }.take(1)
+                            onEvent(RegistrationEvent.VerificationCodeChanged(i, filteredValue))
+                            
+                            // Auto-focus next field if a digit was entered
+                            if (filteredValue.isNotEmpty() && i < 5) {
+                                focusRequesters[i + 1].requestFocus()
+                            }
+                        }
+                    },
                     modifier = Modifier
-                        .weight(1f),
+                        .weight(1f)
+                        .focusRequester(focusRequesters[i]),
                     textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = if (i == 5) ImeAction.Done else ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = {
+                            if (i < 5) {
+                                focusRequesters[i + 1].requestFocus()
+                            }
+                        },
+                        onDone = {
+                            // Hide keyboard or trigger verification
+                            focusRequesters[i].freeFocus()
+                        }
+                    ),
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp), // 12dp rounded corners
+                    shape = RoundedCornerShape(12.dp),
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = S_INPUT_BACKGROUND,
                         focusedIndicatorColor = Color.Transparent,
@@ -274,6 +321,16 @@ fun Step2VerifyEmail(
                         errorIndicatorColor = Color.Transparent
                     )
                 )
+            }
+        }
+        
+        // Auto-focus first empty field when the screen loads
+        LaunchedEffect(Unit) {
+            val firstEmptyIndex = uiState.verificationCode.indexOfFirst { it.isEmpty() }
+            if (firstEmptyIndex != -1) {
+                focusRequesters[firstEmptyIndex].requestFocus()
+            } else {
+                focusRequesters[0].requestFocus()
             }
         }
         Spacer(modifier = Modifier.height(20.dp))

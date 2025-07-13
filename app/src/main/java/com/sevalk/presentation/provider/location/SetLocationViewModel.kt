@@ -10,15 +10,23 @@ import com.google.android.gms.location.*
 import com.google.android.gms.maps.model.LatLng
 import com.sevalk.data.models.LocationMethod
 import com.sevalk.data.models.ServiceLocation
+import com.sevalk.data.repositories.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import timber.log.Timber
 import java.util.*
+import javax.inject.Inject
 
-class SetLocationViewModel(
-    private val context: Context
+@HiltViewModel
+class SetLocationViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val authRepository: AuthRepository
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(SetLocationUiState())
@@ -241,14 +249,70 @@ class SetLocationViewModel(
     
     fun completeSetup() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true)
-            // Simulate API call
-            delay(1000)
-            _uiState.value = _uiState.value.copy(
-                isLoading = false,
-                setupCompleted = true
-            )
+            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            
+            try {
+                val userId = authRepository.getCurrentUserId()
+                if (userId == null) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "User not found. Please log in again."
+                    )
+                    return@launch
+                }
+                
+                val currentState = _uiState.value
+                val serviceLocation = currentState.primaryLocation
+                
+                if (serviceLocation == null) {
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = "Location not selected. Please select a location first."
+                    )
+                    return@launch
+                }
+                
+                // Save location and radius to Firebase
+                val result = authRepository.updateServiceProviderLocation(
+                    providerId = userId,
+                    serviceLocation = serviceLocation,
+                    serviceRadius = _serviceRadius.value.toDouble()
+                )
+                
+                result.fold(
+                    onSuccess = {
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            setupCompleted = true,
+                            error = null
+                        )
+                        Timber.d("Service provider location saved successfully")
+                    },
+                    onFailure = { exception ->
+                        val errorMessage = exception.message ?: "Failed to save location"
+                        _uiState.value = _uiState.value.copy(
+                            isLoading = false,
+                            error = errorMessage
+                        )
+                        Timber.e(exception, "Failed to save service provider location")
+                    }
+                )
+            } catch (e: Exception) {
+                val errorMessage = e.message ?: "An unexpected error occurred"
+                _uiState.value = _uiState.value.copy(
+                    isLoading = false,
+                    error = errorMessage
+                )
+                Timber.e(e, "Exception while saving location")
+            }
         }
+    }
+    
+    /**
+     * Clears any error message.
+     */
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
     }
 }
 

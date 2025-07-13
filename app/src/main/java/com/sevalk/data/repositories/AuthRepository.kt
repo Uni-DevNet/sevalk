@@ -4,6 +4,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sevalk.data.models.ProviderStatus
+import com.sevalk.data.models.Service
+import com.sevalk.data.models.ServiceLocation
 import com.sevalk.data.models.ServiceProvider
 import com.sevalk.data.models.User
 import com.sevalk.data.models.UserType
@@ -38,6 +40,8 @@ interface AuthRepository {
     suspend fun updateUserData(user: User): Result<Unit>
     suspend fun logout()
     suspend fun registerServiceProvider(email: String, password: String, fullName: String, userType: UserType): Result<FirebaseUser>
+    suspend fun updateServiceProviderServices(providerId: String, services: List<Service>): Result<Unit>
+    suspend fun updateServiceProviderLocation(providerId: String, serviceLocation: ServiceLocation, serviceRadius: Double): Result<Unit>
 }
 
 class AuthRepositoryImpl @Inject constructor(
@@ -221,6 +225,71 @@ class AuthRepositoryImpl @Inject constructor(
     
     override suspend fun logout() {
         auth.signOut()
+    }
+    
+    override suspend fun updateServiceProviderServices(
+        providerId: String, 
+        services: List<Service>
+    ): Result<Unit> {
+        return try {
+            val serviceProviderRef = firestore.collection(Constants.COLLECTION_SERVICE_PROVIDERS)
+                .document(providerId)
+            
+            // Check if service provider document exists
+            val document = serviceProviderRef.get().await()
+            
+            if (document.exists()) {
+                // Update existing service provider with services and business name
+                val updates = mapOf(
+                    "services" to services.map { Service.toMap(it) },
+                    "updatedAt" to System.currentTimeMillis()
+                )
+                
+                serviceProviderRef.update(updates).await()
+                Timber.d("Service provider services updated successfully for provider: $providerId")
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Service provider not found"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to update service provider services")
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun updateServiceProviderLocation(
+        providerId: String, 
+        serviceLocation: ServiceLocation,
+        serviceRadius: Double
+    ): Result<Unit> {
+        return try {
+            val serviceProviderRef = firestore.collection(Constants.COLLECTION_SERVICE_PROVIDERS)
+                .document(providerId)
+            
+            // Check if service provider document exists
+            val document = serviceProviderRef.get().await()
+
+            // Ensure service radius to whole number
+            val intRadius = serviceRadius.toInt()
+            
+            if (document.exists()) {
+                // Update existing service provider with location and radius
+                val updates = mapOf(
+                    "serviceLocation" to ServiceLocation.toMap(serviceLocation),
+                    "serviceRadius" to intRadius,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+                
+                serviceProviderRef.update(updates).await()
+                Timber.d("Service provider location updated successfully for provider: $providerId")
+                Result.success(Unit)
+            } else {
+                Result.failure(Exception("Service provider not found"))
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to update service provider location")
+            Result.failure(e)
+        }
     }
     
     private fun generateVerificationCode(): String {
