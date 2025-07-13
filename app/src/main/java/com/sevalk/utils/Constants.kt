@@ -29,6 +29,9 @@ object Constants {
     const val PREF_FCM_TOKEN = "fcm_token"
     const val PREF_LOCATION_PERMISSION = "location_permission"
     const val PREF_NOTIFICATION_ENABLED = "notification_enabled"
+    
+    // Verification
+    const val VERIFICATION_CODE_EXPIRY = 600000L // 10 minutes in milliseconds
 
     // Booking Status
     const val BOOKING_STATUS_PENDING = "pending"

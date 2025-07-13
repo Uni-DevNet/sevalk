@@ -12,5 +12,6 @@ data class RegistrationState (
     val confirmPassword: String = "",
     val isPasswordVisible: Boolean = false,
     val isConfirmPasswordVisible: Boolean = false,
-    val error: String? = null
+    val isLoading: Boolean = false,
+    val error: String? = null,
 )
