@@ -31,7 +31,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.sevalk.ui.theme.SevaLKTheme
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.sevalk.R
 import com.sevalk.presentation.auth.components.AuthHeader
 import com.sevalk.presentation.auth.components.CustomTextField
@@ -41,7 +41,7 @@ import com.sevalk.ui.theme.S_INPUT_BACKGROUND
 
 @Composable
 fun LoginScreen(
-    viewModel: LoginViewModel = viewModel(),
+    viewModel: LoginViewModel = hiltViewModel(),
     onNavigateToSignUp: () -> Unit = {},
     onLoginSuccess: () -> Unit = {}
 ) {
@@ -67,7 +67,9 @@ fun LoginScreen(
                     placeholder = "Enter your email",
                     leadingIcon = painterResource(id = R.drawable.email),
                     keyboardType = KeyboardType.Email,
-                    )
+                    isError = uiState.emailError != null,
+                    errorMessage = uiState.emailError
+                )
 
                 // Password TextField
                 CustomTextField(
@@ -77,12 +79,18 @@ fun LoginScreen(
                     placeholder = "Enter your password",
                     leadingIcon = painterResource(id = R.drawable.lock),
                     keyboardType = KeyboardType.Password,
+                    isPasswordField = true,
+                    isPasswordVisible = uiState.isPasswordVisible,
                     trailingIcon = if (uiState.isPasswordVisible) {
                         painterResource(id = R.drawable.eye_slash)
                     } else {
                         painterResource(id = R.drawable.eye)
                     },
+                    onTrailingIconClick = viewModel::onTogglePasswordVisibility,
+                    isError = uiState.passwordError != null,
+                    errorMessage = uiState.passwordError
                 )
+                
                 Text(
                     text = "Forgot Password?",
                     color = Color(0xFFFFC107),
@@ -92,14 +100,25 @@ fun LoginScreen(
                         .clickable { viewModel.forgotPassword() }
                 )
 
-                Spacer(modifier = Modifier.height(64.dp))
+                Spacer(modifier = Modifier.height(32.dp))
+
+                // Show general error message if any
+                uiState.errorMessage?.let { errorMessage ->
+                    Text(
+                        text = errorMessage,
+                        color = Color.Red,
+                        fontSize = 14.sp,
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
+                }
 
                 // Login Button
                 PrimaryButton(
-                    text = "Login",
+                    text = if (uiState.isLoading) "Logging in..." else "Login",
                     onClick = {
-                        onLoginSuccess()
-                    }
+                        viewModel.onLoginClick(onSuccess = onLoginSuccess)
+                    },
+                    enabled = !uiState.isLoading
                 )
 
                 Spacer(modifier = Modifier.height(28.dp))

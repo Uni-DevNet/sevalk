@@ -32,6 +32,7 @@ import kotlin.random.Random
 interface AuthRepository {
     val currentUser: Flow<FirebaseUser?>
     
+    suspend fun login(email: String, password: String): Result<FirebaseUser>
     suspend fun sendVerificationCode(email: String, fullName: String): String
     suspend fun verifyCode(email: String, code: String): Boolean
     suspend fun registerUser(email: String, password: String, fullName: String, userType: UserType): Result<FirebaseUser>
@@ -57,6 +58,19 @@ class AuthRepositoryImpl @Inject constructor(
         }
         auth.addAuthStateListener(listener)
         awaitClose { auth.removeAuthStateListener(listener) }
+    }
+
+    override suspend fun login(email: String, password: String): Result<FirebaseUser> {
+        return try {
+            val authResult = auth.signInWithEmailAndPassword(email, password).await()
+            val user = authResult.user ?: return Result.failure(Exception("Authentication failed"))
+            
+            Timber.d("User logged in successfully: ${user.uid}")
+            Result.success(user)
+        } catch (e: Exception) {
+            Timber.e(e, "Login failed for email: $email")
+            Result.failure(e)
+        }
     }
 
     override suspend fun sendVerificationCode(email: String, fullName: String): String {
