@@ -1,5 +1,8 @@
 package com.sevalk.data.models
 
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+
 data class ServiceProvider(
     val id: String = "",
     val userId: String = "", // Reference to User
@@ -18,7 +21,42 @@ data class ServiceProvider(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val status: ProviderStatus = ProviderStatus.PENDING
-)
+) {
+    companion object {
+        private val gson = Gson()
+        
+        // Convert ServiceProvider object to JSON string
+        fun toJson(serviceProvider: ServiceProvider): String {
+            return gson.toJson(serviceProvider)
+        }
+        
+        // Convert JSON string to ServiceProvider object
+        fun fromJson(json: String): ServiceProvider? {
+            return try {
+                gson.fromJson(json, ServiceProvider::class.java)
+            } catch (e: Exception) {
+                null
+            }
+        }
+        
+        // Convert ServiceProvider object to Map (for Firebase)
+        fun toMap(serviceProvider: ServiceProvider): Map<String, Any?> {
+            val json = toJson(serviceProvider)
+            val type = object : TypeToken<Map<String, Any?>>() {}.type
+            return gson.fromJson(json, type)
+        }
+        
+        // Convert Map to ServiceProvider object (from Firebase)
+        fun fromMap(map: Map<String, Any?>): ServiceProvider? {
+            return try {
+                val json = gson.toJson(map)
+                fromJson(json)
+            } catch (e: Exception) {
+                null
+            }
+        }
+    }
+}
 
 enum class ProviderStatus {
     PENDING, APPROVED, SUSPENDED, REJECTED

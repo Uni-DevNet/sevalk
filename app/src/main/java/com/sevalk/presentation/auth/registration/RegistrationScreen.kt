@@ -39,6 +39,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.sevalk.R
 import com.sevalk.data.models.UserType
 import com.sevalk.presentation.auth.components.AuthHeader
@@ -53,7 +54,7 @@ import com.sevalk.ui.theme.SevaLKTheme
 
 @Composable
 fun RegistrationScreen(
-    viewModel: RegistrationViewModel = viewModel(),
+    viewModel: RegistrationViewModel = hiltViewModel(),
     onNavigateToLogin: () -> Unit = {},
     onNavigateToServiceSelection: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
@@ -73,6 +74,19 @@ fun RegistrationScreen(
                     else -> "Registration"
                 },
             )
+            
+            // Show error message if present
+            if (uiState.error != null) {
+                Text(
+                    text = uiState.error,
+                    color = Color.Red,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+            
             Column(
                 modifier = Modifier
                     .padding(horizontal = 24.dp),
@@ -82,6 +96,13 @@ fun RegistrationScreen(
                     totalSteps = 3
                 )
                 Spacer(modifier = Modifier.height(40.dp))
+                
+                // Show loading indicator when processing
+                if (uiState.isLoading) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
                 
                 when (uiState.currentStep) {
                     1 -> Step1GetStarted(
@@ -222,6 +243,7 @@ fun Step2VerifyEmail(
             textAlign = TextAlign.Justify,
             color = Color.Black
         )
+        
         Spacer(modifier = Modifier.height(30.dp))
         Text(
             text = "Verification Code",
@@ -381,10 +403,15 @@ fun Step3AlmostThere(
 }
 
 
-@Preview
-@Composable
-fun RegistrationScreenPreview() {
-    SevaLKTheme {
-        RegistrationScreen()
-    }
-}
+//@Preview
+//@Composable
+//fun RegistrationScreenPreview() {
+//    SevaLKTheme {
+//        // We'll provide a dummy implementation for preview
+//        val previewViewModel = object : RegistrationViewModel() {
+//            // Empty implementation that doesn't use Hilt for preview purposes
+//        }
+//        // Pass the preview view model directly to avoid Hilt in preview
+//        RegistrationScreen(viewModel = previewViewModel)
+//    }
+//}

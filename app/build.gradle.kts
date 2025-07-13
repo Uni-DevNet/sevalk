@@ -34,9 +34,27 @@ android {
             )
         }
     }
+    
+    // Add packaging options to handle duplicate files from email libraries
+    packaging {
+        resources {
+            excludes += listOf(
+                "META-INF/LICENSE.md", 
+                "META-INF/LICENSE-notice.md", 
+                "META-INF/NOTICE.md",
+                "META-INF/DEPENDENCIES",
+                "META-INF/ASL2.0",
+                "META-INF/LICENSE",
+                "META-INF/NOTICE"
+            )
+        }
+    }
+    
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+        // Enable proper thread handling for network operations
+        isCoreLibraryDesugaringEnabled = true
     }
     kotlinOptions {
         jvmTarget = "11"
@@ -67,6 +85,16 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+    implementation(libs.firebase.crashlytics.buildtools)
+
+    // Core library desugaring (for proper thread handling)
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+    
+    // Email sending dependencies
+    implementation("com.sun.mail:android-mail:1.6.7")
+    implementation("com.sun.mail:android-activation:1.6.7")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+    
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -86,4 +114,5 @@ dependencies {
     implementation(libs.androidx.fragment.ktx)
     implementation(platform("androidx.compose:compose-bom:2023.06.01"))
     implementation("com.jakewharton.timber:timber:5.0.1")
+    implementation("com.google.code.gson:gson:2.10.1")
 }
