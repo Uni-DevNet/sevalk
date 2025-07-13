@@ -182,7 +182,8 @@ fun CashPaymentScreen( // Renamed to ensure it's distinct if PaymentScreen also 
                 description = "Pay directly to service provider",
                 feeInfo = "No processing fees",
                 isSelected = selectedPaymentMethod == PaymentMethod.Cash,
-                onClick = { selectedPaymentMethod = PaymentMethod.Cash }
+                onClick = { selectedPaymentMethod = PaymentMethod.Cash },
+
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -193,7 +194,8 @@ fun CashPaymentScreen( // Renamed to ensure it's distinct if PaymentScreen also 
                 description = "Visa, Mastercard, American Express",
                 feeInfo = "No processing fees",
                 isSelected = selectedPaymentMethod == PaymentMethod.CreditDebitCard,
-                onClick = { selectedPaymentMethod = PaymentMethod.CreditDebitCard }
+                onClick = { selectedPaymentMethod = PaymentMethod.CreditDebitCard },
+
             )
             Spacer(modifier = Modifier.height(16.dp))
 

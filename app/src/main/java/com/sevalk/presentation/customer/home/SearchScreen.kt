@@ -22,7 +22,7 @@ import com.sevalk.presentation.components.map.ServiceProvider
 import com.sevalk.presentation.components.map.ServiceType
 import com.sevalk.presentation.components.map.SearchBar
 import com.sevalk.presentation.components.map.ServiceTypeFilters
-import com.sevalk.data.repository.ServiceProviderRepository
+import com.sevalk.data.repositories.ServiceProviderRepository
 import com.sevalk.presentation.components.common.PrimaryButton
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.ui.res.painterResource

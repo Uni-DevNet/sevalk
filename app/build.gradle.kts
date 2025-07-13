@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     id("com.google.dagger.hilt.android")
     kotlin("kapt")
+    alias(libs.plugins.google.gms.google.services)
 }
 
 android {
@@ -21,6 +22,10 @@ android {
     }
 
     buildTypes {
+        debug {
+            isDebuggable = true
+            // This creates BuildConfig.DEBUG = true
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -38,6 +43,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -55,6 +61,12 @@ dependencies {
     implementation("com.google.android.gms:play-services-maps:18.1.0")
     implementation("com.google.android.gms:play-services-location:21.2.0")
     implementation(libs.play.services.maps)
+    implementation(libs.firebase.database)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.auth)
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -73,4 +85,5 @@ dependencies {
     implementation(libs.androidx.activity.ktx)
     implementation(libs.androidx.fragment.ktx)
     implementation(platform("androidx.compose:compose-bom:2023.06.01"))
+    implementation("com.jakewharton.timber:timber:5.0.1")
 }
