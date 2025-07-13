@@ -86,6 +86,9 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.firebase.crashlytics.buildtools)
+    
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Core library desugaring (for proper thread handling)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")

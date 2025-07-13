@@ -1,5 +1,8 @@
 package com.sevalk.presentation.auth.registration
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -35,6 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -65,8 +69,18 @@ fun RegistrationScreen(
     onNavigateToLogin: () -> Unit = {},
     onNavigateToServiceSelection: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
+    onNavigateToUserTypeSelection: (String, String) -> Unit = { _, _ -> }
 ) {
     val uiState = viewModel.uiState.collectAsState().value
+    
+    // Google Sign-In launcher
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.handleGoogleSignInResult(result.data, onNavigateToUserTypeSelection)
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -115,7 +129,12 @@ fun RegistrationScreen(
                     1 -> Step1GetStarted(
                         uiState = uiState,
                         onEvent = viewModel::onEvent,
-                        onNavigateToLogin = onNavigateToLogin
+                        onNavigateToLogin = onNavigateToLogin,
+                        onGoogleSignIn = {
+                            viewModel.initiateGoogleSignIn { signInIntent ->
+                                googleSignInLauncher.launch(signInIntent)
+                            }
+                        }
                     )
                     2 -> Step2VerifyEmail(
                         uiState = uiState,
@@ -137,7 +156,8 @@ fun RegistrationScreen(
 fun Step1GetStarted(
     uiState: RegistrationState,
     onEvent: (RegistrationEvent) -> Unit,
-    onNavigateToLogin: () -> Unit = {}
+    onNavigateToLogin: () -> Unit = {},
+    onGoogleSignIn: () -> Unit = {}
 ) {
     Column {
         // Full Name TextField
@@ -196,7 +216,7 @@ fun Step1GetStarted(
         Spacer(modifier = Modifier.height(28.dp))
 
         Button(
-            onClick = { /* TODO: add logic */ },
+            onClick = onGoogleSignIn,
             modifier = Modifier
                 .size(56.dp)
                 .align(Alignment.CenterHorizontally),
@@ -204,7 +224,8 @@ fun Step1GetStarted(
             colors = ButtonDefaults.buttonColors(
                 containerColor = S_INPUT_BACKGROUND
             ),
-            contentPadding = PaddingValues(0.dp)
+            contentPadding = PaddingValues(0.dp),
+            enabled = !uiState.isLoading
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.google),

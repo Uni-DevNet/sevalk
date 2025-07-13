@@ -1,10 +1,14 @@
 package com.sevalk.presentation.auth.login
 
+import android.content.Context
 import android.util.Patterns
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.sevalk.data.repositories.AuthRepository
+import com.sevalk.utils.GoogleSignInHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -15,11 +19,14 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    @ApplicationContext private val context: Context
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(LoginState())
     val uiState: StateFlow<LoginState> = _uiState.asStateFlow()
+    
+    private val googleSignInHelper = GoogleSignInHelper(context)
 
     fun onEmailChange(email: String) {
         _uiState.update { 
@@ -113,6 +120,98 @@ class LoginViewModel @Inject constructor(
     fun forgotPassword() {
         // TODO: Implement forgot password functionality
         Timber.d("Forgot password clicked")
+    }
+    
+    fun initiateGoogleSignIn(onSignInIntentReady: (android.content.Intent) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val signInIntent = googleSignInHelper.getSignInIntent()
+                onSignInIntentReady(signInIntent)
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to create Google Sign-In intent")
+                _uiState.update { 
+                    it.copy(
+                        errorMessage = "Failed to start Google Sign-In: ${e.message ?: "Unknown error"}",
+                        isLoading = false
+                    )
+                }
+            }
+        }
+    }
+    
+    fun handleGoogleSignInResult(
+        data: android.content.Intent?, 
+        onNavigateToUserTypeSelection: (String, String) -> Unit,
+        onLoginSuccess: () -> Unit
+    ) {
+        _uiState.update { it.copy(isLoading = true) }
+        
+        viewModelScope.launch {
+            try {
+                val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+                val account = googleSignInHelper.handleSignInResult(task)
+                
+                if (account != null) {
+                    val idToken = account.idToken
+                    if (idToken != null) {
+                        val result = authRepository.signInWithGoogle(idToken)
+                        result.fold(
+                            onSuccess = { user ->
+                                Timber.d("Google Sign-In successful: ${user.uid}")
+                                
+                                // Check if user already exists in database
+                                val userDataResult = authRepository.getUserData(user.uid)
+                                userDataResult.fold(
+                                    onSuccess = { userData ->
+                                        // User exists, login successful
+                                        _uiState.update { it.copy(isLoading = false, errorMessage = null) }
+                                        onLoginSuccess()
+                                    },
+                                    onFailure = {
+                                        // User doesn't exist, navigate to user type selection
+                                        val email = account.email ?: ""
+                                        val name = account.displayName ?: ""
+                                        _uiState.update { it.copy(isLoading = false, errorMessage = null) }
+                                        onNavigateToUserTypeSelection(email, name)
+                                    }
+                                )
+                            },
+                            onFailure = { exception ->
+                                Timber.e(exception, "Google Sign-In failed")
+                                _uiState.update { 
+                                    it.copy(
+                                        errorMessage = "Google Sign-In failed: ${exception.message ?: "Unknown error"}",
+                                        isLoading = false
+                                    )
+                                }
+                            }
+                        )
+                    } else {
+                        _uiState.update { 
+                            it.copy(
+                                errorMessage = "Failed to get Google ID token",
+                                isLoading = false
+                            )
+                        }
+                    }
+                } else {
+                    _uiState.update { 
+                        it.copy(
+                            errorMessage = "Google Sign-In was cancelled",
+                            isLoading = false
+                        )
+                    }
+                }
+            } catch (e: Exception) {
+                Timber.e(e, "Google Sign-In error")
+                _uiState.update { 
+                    it.copy(
+                        errorMessage = "Google Sign-In failed: ${e.message ?: "Unknown error"}",
+                        isLoading = false
+                    )
+                }
+            }
+        }
     }
     
     private fun validateInputs(email: String, password: String): Map<String, String> {

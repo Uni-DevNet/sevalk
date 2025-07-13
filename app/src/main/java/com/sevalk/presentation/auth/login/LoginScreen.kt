@@ -1,5 +1,8 @@
 package com.sevalk.presentation.auth.login
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -43,9 +46,23 @@ import com.sevalk.ui.theme.S_INPUT_BACKGROUND
 fun LoginScreen(
     viewModel: LoginViewModel = hiltViewModel(),
     onNavigateToSignUp: () -> Unit = {},
-    onLoginSuccess: () -> Unit = {}
+    onLoginSuccess: () -> Unit = {},
+    onNavigateToUserTypeSelection: (String, String) -> Unit = { _, _ -> }
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    
+    // Google Sign-In launcher
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.handleGoogleSignInResult(
+                result.data, 
+                onNavigateToUserTypeSelection,
+                onLoginSuccess
+            )
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -148,7 +165,11 @@ fun LoginScreen(
                 Spacer(modifier = Modifier.height(28.dp))
 
                 Button(
-                    onClick = { /* TODO: add logic */ },
+                    onClick = { 
+                        viewModel.initiateGoogleSignIn { signInIntent ->
+                            googleSignInLauncher.launch(signInIntent)
+                        }
+                    },
                     modifier = Modifier
                         .size(56.dp)
                         .align(Alignment.CenterHorizontally),
@@ -156,7 +177,8 @@ fun LoginScreen(
                     colors = ButtonDefaults.buttonColors(
                         containerColor = S_INPUT_BACKGROUND
                     ),
-                    contentPadding = PaddingValues(0.dp)
+                    contentPadding = PaddingValues(0.dp),
+                    enabled = !uiState.isLoading
                 ) {
                     Icon(
                         painter = painterResource(id = R.drawable.google),

@@ -2,6 +2,7 @@ package com.sevalk.data.repositories
 
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.auth.GoogleAuthProvider
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sevalk.data.models.ProviderStatus
 import com.sevalk.data.models.Service
@@ -33,9 +34,12 @@ interface AuthRepository {
     val currentUser: Flow<FirebaseUser?>
     
     suspend fun login(email: String, password: String): Result<FirebaseUser>
+    suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser>
     suspend fun sendVerificationCode(email: String, fullName: String): String
     suspend fun verifyCode(email: String, code: String): Boolean
     suspend fun registerUser(email: String, password: String, fullName: String, userType: UserType): Result<FirebaseUser>
+    suspend fun createGoogleUser(email: String, fullName: String, userType: UserType): Result<FirebaseUser>
+    suspend fun createGoogleServiceProvider(email: String, fullName: String, userType: UserType): Result<FirebaseUser>
     suspend fun getCurrentUserId(): String?
     suspend fun getUserData(userId: String): Result<User>
     suspend fun updateUserData(user: User): Result<Unit>
@@ -69,6 +73,20 @@ class AuthRepositoryImpl @Inject constructor(
             Result.success(user)
         } catch (e: Exception) {
             Timber.e(e, "Login failed for email: $email")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun signInWithGoogle(idToken: String): Result<FirebaseUser> {
+        return try {
+            val credential = GoogleAuthProvider.getCredential(idToken, null)
+            val authResult = auth.signInWithCredential(credential).await()
+            val user = authResult.user ?: return Result.failure(Exception("Google authentication failed"))
+            
+            Timber.d("User logged in with Google successfully: ${user.uid}")
+            Result.success(user)
+        } catch (e: Exception) {
+            Timber.e(e, "Google sign-in failed")
             Result.failure(e)
         }
     }
@@ -181,6 +199,94 @@ class AuthRepositoryImpl @Inject constructor(
             Result.success(authResult.user!!)
         } catch (e: Exception) {
             Timber.e(e, "Service provider registration failed")
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun createGoogleUser(
+        email: String, 
+        fullName: String, 
+        userType: UserType
+    ): Result<FirebaseUser> {
+        return try {
+            val currentUser = auth.currentUser ?: return Result.failure(Exception("No authenticated user"))
+            val userId = currentUser.uid
+            
+            // Create User object
+            val user = User(
+                id = userId,
+                email = email,
+                displayName = fullName,
+                userType = userType,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            
+            // Convert User object to Map using companion function
+            val userData = User.toMap(user)
+            
+            // Save to Firestore
+            firestore.collection(Constants.COLLECTION_USERS)
+                .document(userId)
+                .set(userData)
+                .await()
+            
+            Result.success(currentUser)
+        } catch (e: Exception) {
+            Timber.e(e, "Google user creation failed")
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun createGoogleServiceProvider(
+        email: String, 
+        fullName: String, 
+        userType: UserType
+    ): Result<FirebaseUser> {
+        return try {
+            val currentUser = auth.currentUser ?: return Result.failure(Exception("No authenticated user"))
+            val userId = currentUser.uid
+            
+            // Create User object for customers collection
+            val user = User(
+                id = userId,
+                email = email,
+                displayName = fullName,
+                userType = userType,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            
+            // Create ServiceProvider object for service providers collection
+            val serviceProvider = ServiceProvider(
+                id = userId,
+                userId = userId,
+                businessName = fullName, // Initially set to full name, can be updated later
+                description = "",
+                status = ProviderStatus.PENDING,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            
+            // Convert objects to Maps using companion functions
+            val userData = User.toMap(user)
+            val serviceProviderData = ServiceProvider.toMap(serviceProvider)
+            
+            // Save User to customers collection
+            firestore.collection(Constants.COLLECTION_USERS)
+                .document(userId)
+                .set(userData)
+                .await()
+            
+            // Save ServiceProvider to service providers collection
+            firestore.collection(Constants.COLLECTION_SERVICE_PROVIDERS)
+                .document(userId)
+                .set(serviceProviderData)
+                .await()
+            
+            Result.success(currentUser)
+        } catch (e: Exception) {
+            Timber.e(e, "Google service provider creation failed")
             Result.failure(e)
         }
     }
