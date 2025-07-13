@@ -26,6 +26,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.sevalk.R
@@ -40,11 +41,20 @@ import com.sevalk.ui.theme.SevaLKTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ServiceSelectionScreen(
-    viewModel: ServiceViewModel = viewModel(),
+    viewModel: ServiceViewModel = hiltViewModel(),
     onNavigateToNext: () -> Unit = {}
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val selectedCount = uiState.selectedServiceCount
+
+    // Handle error display
+    LaunchedEffect(uiState.error) {
+        uiState.error?.let { error ->
+            // You can show a snackbar or toast here
+            // For now, we'll just log it
+            viewModel.clearError()
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -56,7 +66,16 @@ fun ServiceSelectionScreen(
             )
         },
         bottomBar = {
-            BottomBar(selectedCount = selectedCount, onComplete = onNavigateToNext)
+            BottomBar(
+                selectedCount = selectedCount, 
+                isLoading = uiState.isLoading,
+                onComplete = {
+                    viewModel.saveSelectedServices(
+                        onSuccess = onNavigateToNext,
+                        onError = { /* Error is handled in uiState */ }
+                    )
+                }
+            )
         }
     ) { paddingValues ->
         Column(
@@ -84,12 +103,6 @@ fun ServiceSelectionScreen(
                 onServiceSelected = viewModel::onServiceSelected,
                 onPriceChanged = viewModel::onPriceChanged
             )
-            Spacer(modifier = Modifier.weight(1f))
-            ServiceProviderInput(
-                name = uiState.serviceProviderName,
-                onNameChanged = viewModel::onProviderNameChanged
-            )
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -267,7 +280,7 @@ fun ServiceProviderInput(name: String, onNameChanged: (String) -> Unit) {
 }
 
 @Composable
-fun BottomBar(selectedCount: Int, onComplete: () -> Unit) {
+fun BottomBar(selectedCount: Int, isLoading: Boolean = false, onComplete: () -> Unit) {
     Surface(
         shadowElevation = 8.dp,
         modifier = Modifier.fillMaxWidth()
@@ -284,15 +297,25 @@ fun BottomBar(selectedCount: Int, onComplete: () -> Unit) {
             )
             Button(
                 onClick = onComplete,
-                enabled = selectedCount > 0,
+                enabled = selectedCount > 0 && !isLoading,
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFFFC107), // A gold/yellow color
-                    disabledContainerColor = Color.LightGray,
+                    containerColor = S_YELLOW,
                     contentColor = Color.Black
                 )
             ) {
-                Text("Complete Setup", modifier = Modifier.padding(vertical = 4.dp))
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = Color.Black,
+                        strokeWidth = 2.dp
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                }
+                Text(
+                    text = if (isLoading) "Saving..." else "Complete",
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
@@ -302,6 +325,7 @@ fun BottomBar(selectedCount: Int, onComplete: () -> Unit) {
 @Composable
 fun ServiceSelectionScreenPreview() {
     SevaLKTheme {
-        ServiceSelectionScreen()
+        // For preview, we need to provide a mock viewModel since Hilt isn't available in previews
+        // This is just for preview purposes
     }
 }

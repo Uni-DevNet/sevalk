@@ -16,4 +16,5 @@ sealed class RegistrationEvent {
     object SubmitRegistration : RegistrationEvent()
     data class SubmitServiceProviderRegistration(val onNavigateToServiceSelection: () -> Unit) : RegistrationEvent()
     data class SubmitCustomerRegistration(val onNavigateToHome: () -> Unit) : RegistrationEvent()
+    data class GoogleSignIn(val onNavigateToUserTypeSelection: (String, String) -> Unit) : RegistrationEvent()
 }

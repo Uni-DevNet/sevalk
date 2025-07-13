@@ -1,15 +1,24 @@
 package com.sevalk.presentation.provider.service
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.sevalk.data.models.PricingModel
 import com.sevalk.data.models.Service
 import com.sevalk.data.models.ServiceCategory
+import com.sevalk.data.repositories.AuthRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+import timber.log.Timber
+import javax.inject.Inject
 
-class ServiceViewModel : ViewModel() {
+@HiltViewModel
+class ServiceViewModel @Inject constructor(
+    private val authRepository: AuthRepository
+) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ServiceUiState())
     val uiState: StateFlow<ServiceUiState> = _uiState.asStateFlow()
@@ -93,6 +102,108 @@ class ServiceViewModel : ViewModel() {
         _uiState.update { it.copy(serviceProviderName = name) }
     }
 
+    /**
+     * Saves the selected services to Firebase for the current service provider.
+     */
+    fun saveSelectedServices(onSuccess: () -> Unit = {}, onError: (String) -> Unit = {}) {
+        val currentState = _uiState.value
+        val selectedServices = getSelectedServices()
+        
+        // Validation
+        if (selectedServices.isEmpty()) {
+            onError("Please select at least one service")
+            return
+        }
+        
+        // Check if all selected services have prices
+        val servicesWithoutPrice = selectedServices.filter { it.price.isBlank() }
+        if (servicesWithoutPrice.isNotEmpty()) {
+            onError("Please enter prices for all selected services")
+            return
+        }
+        
+        _uiState.update { it.copy(isLoading = true, error = null) }
+        
+        viewModelScope.launch {
+            try {
+                val userId = authRepository.getCurrentUserId()
+                if (userId == null) {
+                    _uiState.update { 
+                        it.copy(
+                            isLoading = false, 
+                            error = "User not found. Please log in again."
+                        ) 
+                    }
+                    onError("User not found. Please log in again.")
+                    return@launch
+                }
+                
+                // Create services list with only selected services and their prices
+                val servicesToSave = selectedServices.map { service ->
+                    service.copy(
+                        isSelected = false, // Reset selection state for storage
+                        isExpanded = false  // Reset expanded state for storage
+                    )
+                }
+                
+                val result = authRepository.updateServiceProviderServices(
+                    providerId = userId,
+                    services = servicesToSave
+                )
+                
+                result.fold(
+                    onSuccess = {
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false, 
+                                isServicesSubmitted = true,
+                                error = null
+                            ) 
+                        }
+                        Timber.d("Services saved successfully")
+                        onSuccess()
+                    },
+                    onFailure = { exception ->
+                        val errorMessage = exception.message ?: "Failed to save services"
+                        _uiState.update { 
+                            it.copy(
+                                isLoading = false, 
+                                error = errorMessage
+                            ) 
+                        }
+                        Timber.e(exception, "Failed to save services")
+                        onError(errorMessage)
+                    }
+                )
+            } catch (e: Exception) {
+                val errorMessage = e.message ?: "An unexpected error occurred"
+                _uiState.update { 
+                    it.copy(
+                        isLoading = false, 
+                        error = errorMessage
+                    ) 
+                }
+                Timber.e(e, "Exception while saving services")
+                onError(errorMessage)
+            }
+        }
+    }
+    
+    /**
+     * Gets all selected services with their prices.
+     */
+    fun getSelectedServices(): List<Service> {
+        return _uiState.value.serviceCategories.flatMap { category ->
+            category.services.filter { it.isSelected }
+        }
+    }
+    
+    /**
+     * Clears any error message.
+     */
+    fun clearError() {
+        _uiState.update { it.copy(error = null) }
+    }
 
     /**
      * Loads the initial list of services and categories.

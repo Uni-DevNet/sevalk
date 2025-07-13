@@ -1,5 +1,8 @@
 package com.sevalk.presentation.auth.registration
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -13,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -27,8 +31,15 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
@@ -39,6 +50,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.sevalk.R
 import com.sevalk.data.models.UserType
 import com.sevalk.presentation.auth.components.AuthHeader
@@ -53,12 +65,22 @@ import com.sevalk.ui.theme.SevaLKTheme
 
 @Composable
 fun RegistrationScreen(
-    viewModel: RegistrationViewModel = viewModel(),
+    viewModel: RegistrationViewModel = hiltViewModel(),
     onNavigateToLogin: () -> Unit = {},
     onNavigateToServiceSelection: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
+    onNavigateToUserTypeSelection: (String, String) -> Unit = { _, _ -> }
 ) {
     val uiState = viewModel.uiState.collectAsState().value
+    
+    // Google Sign-In launcher
+    val googleSignInLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            viewModel.handleGoogleSignInResult(result.data, onNavigateToUserTypeSelection)
+        }
+    }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
@@ -73,6 +95,19 @@ fun RegistrationScreen(
                     else -> "Registration"
                 },
             )
+            
+            // Show error message if present
+            if (uiState.error != null) {
+                Text(
+                    text = uiState.error,
+                    color = Color.Red,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp, vertical = 8.dp),
+                    textAlign = TextAlign.Center
+                )
+            }
+            
             Column(
                 modifier = Modifier
                     .padding(horizontal = 24.dp),
@@ -83,11 +118,23 @@ fun RegistrationScreen(
                 )
                 Spacer(modifier = Modifier.height(40.dp))
                 
+                // Show loading indicator when processing
+                if (uiState.isLoading) {
+                    androidx.compose.material3.CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally)
+                    )
+                }
+                
                 when (uiState.currentStep) {
                     1 -> Step1GetStarted(
                         uiState = uiState,
                         onEvent = viewModel::onEvent,
-                        onNavigateToLogin = onNavigateToLogin
+                        onNavigateToLogin = onNavigateToLogin,
+                        onGoogleSignIn = {
+                            viewModel.initiateGoogleSignIn { signInIntent ->
+                                googleSignInLauncher.launch(signInIntent)
+                            }
+                        }
                     )
                     2 -> Step2VerifyEmail(
                         uiState = uiState,
@@ -109,7 +156,8 @@ fun RegistrationScreen(
 fun Step1GetStarted(
     uiState: RegistrationState,
     onEvent: (RegistrationEvent) -> Unit,
-    onNavigateToLogin: () -> Unit = {}
+    onNavigateToLogin: () -> Unit = {},
+    onGoogleSignIn: () -> Unit = {}
 ) {
     Column {
         // Full Name TextField
@@ -168,7 +216,7 @@ fun Step1GetStarted(
         Spacer(modifier = Modifier.height(28.dp))
 
         Button(
-            onClick = { /* TODO: add logic */ },
+            onClick = onGoogleSignIn,
             modifier = Modifier
                 .size(56.dp)
                 .align(Alignment.CenterHorizontally),
@@ -176,7 +224,8 @@ fun Step1GetStarted(
             colors = ButtonDefaults.buttonColors(
                 containerColor = S_INPUT_BACKGROUND
             ),
-            contentPadding = PaddingValues(0.dp)
+            contentPadding = PaddingValues(0.dp),
+            enabled = !uiState.isLoading
         ) {
             Icon(
                 painter = painterResource(id = R.drawable.google),
@@ -216,12 +265,16 @@ fun Step2VerifyEmail(
     uiState: RegistrationState,
     onEvent: (RegistrationEvent) -> Unit
 ) {
+    val focusRequesters = remember { List(6) { FocusRequester() } }
+    val clipboardManager = LocalClipboardManager.current
+    
     Column {
         Text(
             text = "We've sent a verification email to ${uiState.email}. Please check your inbox (and spam folder) and click the verification link or enter the code below.",
             textAlign = TextAlign.Justify,
             color = Color.Black
         )
+        
         Spacer(modifier = Modifier.height(30.dp))
         Text(
             text = "Verification Code",
@@ -237,13 +290,50 @@ fun Step2VerifyEmail(
             for (i in 0..5) {
                 TextField(
                     value = uiState.verificationCode[i],
-                    onValueChange = { onEvent(RegistrationEvent.VerificationCodeChanged(i, it)) },
+                    onValueChange = { newValue ->
+                        // Handle paste operation
+                        if (newValue.length > 1) {
+                            val digits = newValue.filter { it.isDigit() }.take(6)
+                            for (j in digits.indices) {
+                                if (i + j < 6) {
+                                    onEvent(RegistrationEvent.VerificationCodeChanged(i + j, digits[j].toString()))
+                                }
+                            }
+                            // Focus the next empty field or the last field
+                            val nextFocusIndex = (i + digits.length).coerceAtMost(5)
+                            focusRequesters[nextFocusIndex].requestFocus()
+                        } else {
+                            // Handle single character input
+                            val filteredValue = newValue.filter { it.isDigit() }.take(1)
+                            onEvent(RegistrationEvent.VerificationCodeChanged(i, filteredValue))
+                            
+                            // Auto-focus next field if a digit was entered
+                            if (filteredValue.isNotEmpty() && i < 5) {
+                                focusRequesters[i + 1].requestFocus()
+                            }
+                        }
+                    },
                     modifier = Modifier
-                        .weight(1f),
+                        .weight(1f)
+                        .focusRequester(focusRequesters[i]),
                     textStyle = LocalTextStyle.current.copy(textAlign = TextAlign.Center),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number,
+                        imeAction = if (i == 5) ImeAction.Done else ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = {
+                            if (i < 5) {
+                                focusRequesters[i + 1].requestFocus()
+                            }
+                        },
+                        onDone = {
+                            // Hide keyboard or trigger verification
+                            focusRequesters[i].freeFocus()
+                        }
+                    ),
                     singleLine = true,
-                    shape = RoundedCornerShape(12.dp), // 12dp rounded corners
+                    shape = RoundedCornerShape(12.dp),
                     colors = TextFieldDefaults.colors(
                         unfocusedContainerColor = S_INPUT_BACKGROUND,
                         focusedIndicatorColor = Color.Transparent,
@@ -252,6 +342,16 @@ fun Step2VerifyEmail(
                         errorIndicatorColor = Color.Transparent
                     )
                 )
+            }
+        }
+        
+        // Auto-focus first empty field when the screen loads
+        LaunchedEffect(Unit) {
+            val firstEmptyIndex = uiState.verificationCode.indexOfFirst { it.isEmpty() }
+            if (firstEmptyIndex != -1) {
+                focusRequesters[firstEmptyIndex].requestFocus()
+            } else {
+                focusRequesters[0].requestFocus()
             }
         }
         Spacer(modifier = Modifier.height(20.dp))
@@ -381,10 +481,15 @@ fun Step3AlmostThere(
 }
 
 
-@Preview
-@Composable
-fun RegistrationScreenPreview() {
-    SevaLKTheme {
-        RegistrationScreen()
-    }
-}
+//@Preview
+//@Composable
+//fun RegistrationScreenPreview() {
+//    SevaLKTheme {
+//        // We'll provide a dummy implementation for preview
+//        val previewViewModel = object : RegistrationViewModel() {
+//            // Empty implementation that doesn't use Hilt for preview purposes
+//        }
+//        // Pass the preview view model directly to avoid Hilt in preview
+//        RegistrationScreen(viewModel = previewViewModel)
+//    }
+//}

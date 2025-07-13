@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.sevalk.presentation.auth.google.UserTypeSelectionScreen
 import com.sevalk.presentation.auth.login.LoginScreen
 import com.sevalk.presentation.auth.registration.RegistrationScreen
 import com.sevalk.presentation.auth.welcome.WelcomeScreen
@@ -55,6 +56,9 @@ fun SevaLKNavigation(
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Welcome.route) { inclusive = true }
                     }
+                },
+                onNavigateToUserTypeSelection = { email, name ->
+                    navController.navigate(Screen.UserTypeSelection.createRoute(email, name))
                 }
             )
         }
@@ -70,6 +74,28 @@ fun SevaLKNavigation(
                 onNavigateToHome = {
                     navController.navigate(Screen.Home.route) {
                         popUpTo(Screen.Registration.route) { inclusive = true }
+                    }
+                },
+                onNavigateToUserTypeSelection = { email, name ->
+                    navController.navigate(Screen.UserTypeSelection.createRoute(email, name))
+                }
+            )
+        }
+        
+        composable(Screen.UserTypeSelection.route) { backStackEntry ->
+            val email = backStackEntry.arguments?.getString("email") ?: ""
+            val name = backStackEntry.arguments?.getString("name") ?: ""
+            UserTypeSelectionScreen(
+                userEmail = email,
+                userName = name,
+                onNavigateToServiceSelection = {
+                    navController.navigate(Screen.ServiceSelection.route) {
+                        popUpTo(Screen.UserTypeSelection.route) { inclusive = true }
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.UserTypeSelection.route) { inclusive = true }
                     }
                 }
             )
