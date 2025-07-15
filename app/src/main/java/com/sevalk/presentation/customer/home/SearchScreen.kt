@@ -30,33 +30,28 @@ import com.sevalk.ui.theme.S_YELLOW
 import androidx.navigation.NavController
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import com.sevalk.presentation.customer.home.SearchViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 
 @Composable
 fun ServiceProviderMapScreen(
+    viewModel: SearchViewModel = hiltViewModel(),
     navController: NavController? = null,
     onNavigateToBooking: () -> Unit = {}
 ) {
     var selectedServiceType by remember { mutableStateOf(ServiceType.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedProvider by remember { mutableStateOf<ServiceProvider?>(null) }
-    val allServiceProviders = remember { ServiceProviderRepository.getServiceProviders() }
-    val filteredProviders = remember(searchQuery, selectedServiceType) {
-        val searchFiltered = if (searchQuery.isBlank()) {
-            allServiceProviders
-        } else {
-            ServiceProviderRepository.searchServiceProviders(searchQuery)
-        }
-        
-        if (selectedServiceType == ServiceType.ALL) {
-            searchFiltered
-        } else {
-            searchFiltered.filter { it.type == selectedServiceType }
-        }
-    }
+    val providers by viewModel.serviceProviders.collectAsState()
 
+    // Effect to handle search and filter changes
+    LaunchedEffect(searchQuery, selectedServiceType) {
+        viewModel.searchProviders(searchQuery, selectedServiceType)
+    }
+    
     Box(modifier = Modifier.fillMaxSize()) {
         MapService(
-            serviceProviders = filteredProviders,
+            serviceProviders = providers,
             selectedServiceType = selectedServiceType,
             showCurrentLocation = true,
             onMarkerClick = { provider ->
@@ -67,7 +62,9 @@ fun ServiceProviderMapScreen(
 
         SearchBar(
             query = searchQuery,
-            onQueryChange = { searchQuery = it },
+            onQueryChange = { 
+                searchQuery = it
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -341,3 +338,4 @@ fun ProviderInfoCard(
         }
     }
 }
+
