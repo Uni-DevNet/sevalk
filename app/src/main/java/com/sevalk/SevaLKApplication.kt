@@ -101,39 +101,20 @@ class SevaLKApplication : Application() {
     }
 
     private fun setupFirebaseListeners() {
-        // Listen for auth state changes
+        // Auth state is now handled by AuthStateManager
+        // This is just for logging purposes
         FirebaseAuth.getInstance().addAuthStateListener { auth ->
             val user = auth.currentUser
             updateCurrentUser(user?.uid)
 
             if (user != null) {
                 Timber.d("User authenticated: ${user.uid}")
-                // Initialize user-specific services
-                initializeUserServices(user.uid)
             } else {
                 Timber.d("User signed out")
                 // Clean up user-specific data
                 cleanupUserServices()
             }
         }
-    }
-
-    private fun initializeUserServices(userId: String) {
-        // Check if user is a service provider
-        FirebaseFirestore.getInstance()
-            .collection(Constants.COLLECTION_USERS)
-            .document(userId)
-            .get()
-            .addOnSuccessListener { document ->
-                if (document.exists()) {
-                    val userType = document.getString("userType")
-                    updateProviderMode(userType == Constants.USER_TYPE_PROVIDER)
-                    Timber.d("User type determined: $userType")
-                }
-            }
-            .addOnFailureListener { e ->
-                Timber.e(e, "Failed to get user type")
-            }
     }
 
     private fun cleanupUserServices() {
