@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -71,18 +72,15 @@ fun PaymentScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("") }, // Empty title as per screenshot
+                title = { },
                 navigationIcon = {
                     IconButton(onClick = onBackClick) {
-                        Icon(painterResource(id = R.drawable.arrow_left), contentDescription = "Back",
-                            modifier = Modifier.size(28.dp))
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = Color.White // White background for the top app bar
-                ),
-                modifier = Modifier.height(48.dp)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
             )
+
         },
         bottomBar = {
             Column(
