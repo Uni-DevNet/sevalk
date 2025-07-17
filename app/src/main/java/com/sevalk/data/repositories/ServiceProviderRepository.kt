@@ -5,6 +5,8 @@ import com.sevalk.data.models.ServiceProvider
 import com.sevalk.data.models.Service
 import com.sevalk.presentation.components.map.ServiceProvider as MapServiceProvider
 import com.sevalk.presentation.components.map.ServiceType
+import com.sevalk.presentation.components.map.calculateDistance
+import com.sevalk.utils.Constants
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import timber.log.Timber
@@ -30,20 +32,19 @@ class ServiceProviderRepository @Inject constructor(
             snapshot.documents.mapNotNull { document ->
                 try {
                     val data = document.data ?: return@mapNotNull null
-                    
-                    // Extract location data
+
                     val serviceLocation = data["serviceLocation"] as? Map<String, Any>
                     val latitude = serviceLocation?.get("latitude") as? Double ?: 0.0
                     val longitude = serviceLocation?.get("longitude") as? Double ?: 0.0
-                    
-                    // Extract services array
+
                     val services = data["services"] as? List<Map<String, Any>> ?: emptyList()
                     val firstService = services.firstOrNull()
-                    
-                    // Get service name from first service
+
                     val serviceName = firstService?.get("name") as? String
                     
                     Timber.d("Provider ${document.id} service: $serviceName")
+
+                    val price = firstService?.get("price") as? String ?: "0"
                     
                     MapServiceProvider(
                         id = document.id,
@@ -53,7 +54,9 @@ class ServiceProviderRepository @Inject constructor(
                         longitude = longitude,
                         rating = (data["rating"] as? Double)?.toFloat() ?: 0f,
                         description = data["description"] as? String ?: "",
-                        phone = data["phone"] as? String ?: ""
+                        hourlyRate = price.toDoubleOrNull() ?: 0.0,
+                        phone = data["phone"] as? String ?: "",
+                        completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0
                     )
                 } catch (e: Exception) {
                     Timber.e(e, "Error mapping provider document ${document.id}")
@@ -87,13 +90,11 @@ class ServiceProviderRepository @Inject constructor(
             snapshot.documents.mapNotNull { document ->
                 try {
                     val data = document.data ?: return@mapNotNull null
-                    
-                    // Extract provider data
+
                     val businessName = data["businessName"] as? String ?: return@mapNotNull null
                     val description = data["description"] as? String ?: ""
                     val services = data["services"] as? List<Map<String, Any>> ?: emptyList()
-                    
-                    // Check if provider matches search query
+
                     val matchesQuery = query.isEmpty() || 
                         businessName.contains(query, ignoreCase = true) ||
                         description.contains(query, ignoreCase = true) ||
@@ -102,15 +103,15 @@ class ServiceProviderRepository @Inject constructor(
                         }
                     
                     if (!matchesQuery) return@mapNotNull null
-                    
-                    // Extract location data
+
                     val serviceLocation = data["serviceLocation"] as? Map<String, Any>
                     val latitude = serviceLocation?.get("latitude") as? Double ?: 0.0
                     val longitude = serviceLocation?.get("longitude") as? Double ?: 0.0
-                    
-                    // Get service type from first service
+
                     val firstService = services.firstOrNull()
                     val serviceName = firstService?.get("name") as? String
+
+                    val price = firstService?.get("price") as? Long ?: 0L 
                     
                     MapServiceProvider(
                         id = document.id,
@@ -120,7 +121,9 @@ class ServiceProviderRepository @Inject constructor(
                         longitude = longitude,
                         rating = (data["rating"] as? Double)?.toFloat() ?: 0f,
                         description = description,
-                        phone = data["phone"] as? String ?: ""
+                        phone = data["phone"] as? String ?: "",
+                        hourlyRate = price.toDouble(),
+                        completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0
                     )
                 } catch (e: Exception) {
                     Timber.e(e, "Error mapping provider document ${document.id}")
@@ -129,6 +132,42 @@ class ServiceProviderRepository @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.e(e, "Error searching providers")
+            emptyList()
+        }
+    }
+
+    private fun isProviderInRange(
+        providerLat: Double,
+        providerLng: Double,
+        userLat: Double,
+        userLng: Double,
+        radiusKm: Double
+    ): Boolean {
+        val distance = calculateDistance(
+            userLat, userLng,
+            providerLat, providerLng
+        )
+        return distance <= radiusKm * 1000
+    }
+
+    suspend fun getNearbyServiceProviders(
+        userLat: Double,
+        userLng: Double,
+        radiusKm: Double = Constants.NEARBY_PROVIDER_RADIUS_KM
+    ): List<MapServiceProvider> {
+        return try {
+            val allProviders = getServiceProviders()
+            allProviders.filter { provider ->
+                isProviderInRange(
+                    provider.latitude,
+                    provider.longitude,
+                    userLat,
+                    userLng,
+                    radiusKm
+                )
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error getting nearby providers")
             emptyList()
         }
     }

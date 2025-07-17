@@ -7,10 +7,9 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sevalk.presentation.chat.ChatScreen
-import com.sevalk.presentation.customer.booking.BookingScreen
 import com.sevalk.presentation.customer.booking.MyBookingsScreen
 import com.sevalk.presentation.customer.home.HomeScreen
-import com.sevalk.presentation.customer.home.ServiceProviderMapScreen
+import com.sevalk.presentation.customer.search.ServiceProviderMapScreen
 import com.sevalk.presentation.customer.profile.CustomerProfileScreen
 import com.sevalk.presentation.customer.profile.UserProfile
 import com.sevalk.presentation.provider.home.ProviderHomeScreen

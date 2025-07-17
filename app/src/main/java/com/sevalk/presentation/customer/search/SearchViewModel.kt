@@ -1,4 +1,4 @@
-package com.sevalk.presentation.customer.home
+package com.sevalk.presentation.customer.search
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
