@@ -81,6 +81,34 @@ class ServiceProviderRepository @Inject constructor(
         }
     }
 
+    suspend fun getServiceProviderById(providerId: String): ServiceProvider? {
+        return try {
+            Timber.d("Fetching provider with ID: $providerId")
+            val document = firestore.collection("service_providers")
+                .document(providerId)
+                .get()
+                .await()
+            
+            if (document.exists()) {
+                val data = document.data
+                if (data != null) {
+                    val provider = ServiceProvider.fromMap(data)
+                    Timber.d("Provider found: ${provider?.businessName}")
+                    provider
+                } else {
+                    Timber.w("Document exists but data is null for provider $providerId")
+                    null
+                }
+            } else {
+                Timber.w("Document does not exist for provider $providerId")
+                null
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error fetching provider $providerId")
+            null
+        }
+    }
+
     suspend fun searchServiceProviders(query: String): List<MapServiceProvider> {
         return try {
             val snapshot = firestore.collection("service_providers")
