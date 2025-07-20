@@ -121,7 +121,11 @@ fun ServiceProviderMapScreen(
                     onDismiss = { selectedProvider = null },
                     onBookNow = {
                         selectedProvider = null
-                        navController?.navigate("booking") ?: onNavigateToBooking()
+                        val encodedType = java.net.URLEncoder.encode(provider.type.toString(), "UTF-8")
+                        navController?.navigate(
+                            "booking/${provider.id}/${provider.name}/${provider.rating}/${encodedType}" +
+                            "?hourlyRate=${provider.hourlyRate}&completedJobs=${provider.completedJobs}"
+                        )
                     },
                     currentLocation = currentLocation,
                     modifier = Modifier

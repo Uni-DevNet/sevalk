@@ -39,6 +39,12 @@ import com.sevalk.presentation.components.common.PrimaryButtonStyle
 @Composable
 fun BookingScreen(
     modifier: Modifier = Modifier,
+    providerId: String? = null,
+    providerName: String? = null,
+    rating: Float? = null,
+    serviceType: String? = null,
+    hourlyRate: Float? = null,
+    completedJobs: Int? = null,
     onNavigateBack: () -> Unit = {}
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -138,7 +144,7 @@ fun BookingScreen(
                             
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "John Doe",
+                                    text = providerName ?: "Provider Name",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = Color.Black
@@ -150,43 +156,23 @@ fun BookingScreen(
                                 ) {
                                     Text("⭐", fontSize = 12.sp)
                                     Text(
-                                        text = " 4.8 (127)",
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                    Text(
-                                        text = " • 0.8 km",
+                                        text = " ${rating ?: 0.0} (127)",
                                         fontSize = 12.sp,
                                         color = Color.Gray
                                     )
                                 }
                                 
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "Plumbing",
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(
-                                                Color(0xFF2196F3).copy(alpha = 0.1f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                    Text(
-                                        text = "Cleaning",
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(
-                                                Color(0xFF2196F3).copy(alpha = 0.1f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
+                                Text(
+                                    text = serviceType ?: "Service Type",
+                                    color = Color(0xFF2196F3),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .background(
+                                            Color(0xFF2196F3).copy(alpha = 0.1f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
                             }
                             
                             IconButton(onClick = { isFavorite = !isFavorite }) {
@@ -210,7 +196,7 @@ fun BookingScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = " 340 jobs",
+                                text = " ${completedJobs ?: 0} jobs • LKR ${hourlyRate?.let { if (it % 1 == 0f) it.toInt() else it }}/hr",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -253,7 +239,7 @@ fun BookingScreen(
                             
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "John Doe",
+                                    text = providerName ?: "Provider Name",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = Color.Black
@@ -265,43 +251,23 @@ fun BookingScreen(
                                 ) {
                                     Text("⭐", fontSize = 12.sp)
                                     Text(
-                                        text = " 4.8 (127)",
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                    Text(
-                                        text = " • 0.8 km",
+                                        text = " ${rating ?: 0.0} (127)",
                                         fontSize = 12.sp,
                                         color = Color.Gray
                                     )
                                 }
                                 
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "Plumbing",
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(
-                                                Color(0xFF2196F3).copy(alpha = 0.1f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                    Text(
-                                        text = "Cleaning",
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(
-                                                Color(0xFF2196F3).copy(alpha = 0.1f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
+                                Text(
+                                    text = serviceType ?: "Service Type",
+                                    color = Color(0xFF2196F3),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .background(
+                                            Color(0xFF2196F3).copy(alpha = 0.1f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
                             }
                             
                             IconButton(onClick = { isFavorite = !isFavorite }) {
@@ -325,7 +291,7 @@ fun BookingScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = " 340 jobs",
+                                text = " ${completedJobs ?: 0} jobs • LKR ${hourlyRate?.let { if (it % 1 == 0f) it.toInt() else it }}/hr",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -429,25 +395,14 @@ fun BookingScreen(
                     Spacer(modifier = Modifier.height(16.dp))
 
                     ServiceCard(
-                        title = "Plumbing",
-                        subtitle = "Fixing and installing water systems",
-                        duration = "90 minutes",
-                        price = "LKR 400/hr",
-                        isSelected = selectedService == "Plumbing",
-                        onSelect = { selectedService = "Plumbing" }
+                        title = serviceType ?: "Service",
+                        subtitle = "Professional ${serviceType?.lowercase()} services", 
+                        duration = "Based on work",
+                        price = "LKR ${hourlyRate?.let { if (it % 1 == 0f) it.toInt() else it }}/hr",
+                        isSelected = selectedService == serviceType,
+                        onSelect = { selectedService = serviceType ?: "" }
                     )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
 
-                    ServiceCard(
-                        title = "Cleaning",
-                        subtitle = "General home cleaning services",
-                        duration = "Full Day",
-                        price = "LKR 4000/day",
-                        isSelected = selectedService == "Cleaning",
-                        onSelect = { selectedService = "Cleaning" }
-                    )
-                    
                     Spacer(modifier = Modifier.weight(1f))
 
                     PrimaryButton(
