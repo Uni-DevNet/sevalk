@@ -34,21 +34,19 @@ import java.util.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.sevalk.presentation.components.common.PrimaryButton
 import com.sevalk.presentation.components.common.PrimaryButtonStyle
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingScreen(
     modifier: Modifier = Modifier,
     providerId: String? = null,
-    providerName: String? = null,
-    rating: Float? = null,
-    serviceType: String? = null,
-    hourlyRate: Float? = null,
-    completedJobs: Int? = null,
-    onNavigateBack: () -> Unit = {}
+    onNavigateBack: () -> Unit = {},
+    viewModel: BookingViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    var selectedService by remember { mutableStateOf("Cleaning") }
+    var selectedService by remember { mutableStateOf("") }
     var bookingTitle by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf("") }
@@ -57,6 +55,72 @@ fun BookingScreen(
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+
+    val serviceProvider by viewModel.serviceProvider.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    
+    // Load provider details when component mounts
+    LaunchedEffect(providerId) {
+        providerId?.let { 
+            viewModel.loadServiceProvider(it)
+        }
+    }
+    
+    // Initialize selected service when provider is loaded
+    LaunchedEffect(serviceProvider) {
+        serviceProvider?.let { provider ->
+            if (selectedService.isEmpty() && provider.services.isNotEmpty()) {
+                selectedService = provider.services.first().name
+            }
+        }
+    }
+    
+    // Show loading state
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = S_YELLOW)
+        }
+        return
+    }
+    
+    // Show error state
+    if (error != null || (serviceProvider == null && !isLoading)) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = error ?: "Provider not found",
+                    color = Color.Red,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                PrimaryButton(
+                    text = "Go Back",
+                    onClick = onNavigateBack,
+                    backgroundColor = S_YELLOW,
+                    foregroundColor = Color.White
+                )
+            }
+        }
+        return
+    }
+    
+    // Use provider data from database
+    val provider = serviceProvider ?: return
+    val displayName = provider.businessName
+    val displayRating = provider.rating
+    val displayPrice = provider.price
+    val displayCompletedJobs = provider.completedJobs
+    val displayServices = provider.services
+    val primaryService = displayServices.firstOrNull()
 
     BackHandler(enabled = selectedTab == 1) {
         selectedTab = 0
@@ -124,14 +188,11 @@ fun BookingScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box {
-                                
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = "Profile",
                                     modifier = Modifier.size(50.dp),
-                                   
                                 )
-
                                 Box(
                                     modifier = Modifier
                                         .size(12.dp)
@@ -144,7 +205,7 @@ fun BookingScreen(
                             
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = providerName ?: "Provider Name",
+                                    text = displayName,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = Color.Black
@@ -156,14 +217,14 @@ fun BookingScreen(
                                 ) {
                                     Text("⭐", fontSize = 12.sp)
                                     Text(
-                                        text = " ${rating ?: 0.0} (127)",
+                                        text = " ${displayRating} (${provider.totalReviews})",
                                         fontSize = 12.sp,
                                         color = Color.Gray
                                     )
                                 }
                                 
                                 Text(
-                                    text = serviceType ?: "Service Type",
+                                    text = primaryService?.name ?: "Service",
                                     color = Color(0xFF2196F3),
                                     fontSize = 12.sp,
                                     modifier = Modifier
@@ -196,7 +257,7 @@ fun BookingScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = " ${completedJobs ?: 0} jobs • LKR ${hourlyRate?.let { if (it % 1 == 0f) it.toInt() else it }}/hr",
+                                text = " ${displayCompletedJobs} jobs • LKR ${displayPrice}/hr",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -218,14 +279,11 @@ fun BookingScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-
                             Box {
-                               
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = "Profile",
                                     modifier = Modifier.size(50.dp),
-                                   
                                 )
                                 Box(
                                     modifier = Modifier
@@ -239,7 +297,7 @@ fun BookingScreen(
                             
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = providerName ?: "Provider Name",
+                                    text = displayName,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = Color.Black
@@ -251,14 +309,14 @@ fun BookingScreen(
                                 ) {
                                     Text("⭐", fontSize = 12.sp)
                                     Text(
-                                        text = " ${rating ?: 0.0} (127)",
+                                        text = " ${displayRating} (${provider.totalReviews})",
                                         fontSize = 12.sp,
                                         color = Color.Gray
                                     )
                                 }
                                 
                                 Text(
-                                    text = serviceType ?: "Service Type",
+                                    text = primaryService?.name ?: "Service",
                                     color = Color(0xFF2196F3),
                                     fontSize = 12.sp,
                                     modifier = Modifier
@@ -291,7 +349,7 @@ fun BookingScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = " ${completedJobs ?: 0} jobs • LKR ${hourlyRate?.let { if (it % 1 == 0f) it.toInt() else it }}/hr",
+                                text = " ${displayCompletedJobs} jobs • LKR ${displayPrice}/hr",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -394,14 +452,17 @@ fun BookingScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    ServiceCard(
-                        title = serviceType ?: "Service",
-                        subtitle = "Professional ${serviceType?.lowercase()} services", 
-                        duration = "Based on work",
-                        price = "LKR ${hourlyRate?.let { if (it % 1 == 0f) it.toInt() else it }}/hr",
-                        isSelected = selectedService == serviceType,
-                        onSelect = { selectedService = serviceType ?: "" }
-                    )
+                    displayServices.forEach { service ->
+                        ServiceCard(
+                            title = service.name,
+                            subtitle = service.description ?: "Professional ${service.name.lowercase()} services", 
+                            duration = "Based on work",
+                            price = "LKR ${service.price ?: displayPrice}/hr",
+                            isSelected = selectedService == service.name,
+                            onSelect = { selectedService = service.name }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
 
                     Spacer(modifier = Modifier.weight(1f))
 
