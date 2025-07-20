@@ -162,8 +162,9 @@ object Constants {
     }
 
     // Location & Search
-    const val DEFAULT_SEARCH_RADIUS_KM = 10.0
+    const val DEFAULT_SEARCH_RADIUS_KM = 15.0
     const val MAX_SEARCH_RADIUS_KM = 50.0
+    const val NEARBY_PROVIDER_RADIUS_KM = 15.0
     const val LOCATION_UPDATE_INTERVAL = 10000L // 10 seconds
     const val LOCATION_FASTEST_INTERVAL = 5000L // 5 seconds
 

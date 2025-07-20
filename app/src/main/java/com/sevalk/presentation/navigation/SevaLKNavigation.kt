@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.sevalk.presentation.auth.google.UserTypeSelectionScreen
 import com.sevalk.presentation.auth.login.LoginScreen
 import com.sevalk.presentation.auth.registration.RegistrationScreen
@@ -175,8 +176,24 @@ fun SevaLKNavigation(
             )
         }
         
-        composable(Screen.Booking.route) {
+        composable(
+            Screen.Booking.route,
+            arguments = listOf(
+                navArgument("providerId") { nullable = true },
+                navArgument("providerName") { nullable = true },
+                navArgument("rating") { nullable = true },
+                navArgument("serviceType") { nullable = true },
+                navArgument("hourlyRate") { nullable = true },
+                navArgument("completedJobs") { nullable = true }
+            )
+        ) { backStackEntry ->
             BookingScreen(
+                providerId = backStackEntry.arguments?.getString("providerId"),
+                providerName = backStackEntry.arguments?.getString("providerName"),
+                rating = backStackEntry.arguments?.getString("rating")?.toFloatOrNull(),
+                serviceType = backStackEntry.arguments?.getString("serviceType"),
+                hourlyRate = backStackEntry.arguments?.getString("hourlyRate")?.toFloatOrNull(),
+                completedJobs = backStackEntry.arguments?.getString("completedJobs")?.toIntOrNull(),
                 onNavigateBack = {
                     navController.popBackStack()
                 }
