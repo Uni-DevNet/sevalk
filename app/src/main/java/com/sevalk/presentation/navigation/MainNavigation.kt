@@ -225,23 +225,17 @@ fun MainNavigation(
                     CustomerNavigationTab.PROFILE -> {
                         CustomerProfileScreen(
                             navController = navController,
-                            initialUserProfile = UserProfile(
-                                name = "John Smith",
-                                memberSince = "March 2023",
-                                location = "Weligama, Southern Province",
-                                totalBookings = 24,
-                                completedBookings = 10,
-                                rating = 4.8,
-                                email = "john.doe@email.com",
-                                phoneNumber = "+94 77 123 4567",
-                                joinDate = "March 2023"
-                            ),
-                            onSwitchToProviderClick = switchToProviderMode,
-                            onLogoutClick = {},
-                            onFavoritesClick = {},
-                            onPaymentMethodsClick = {},
-                            onPrivacySecurityClick = {},
-                            onHelpSupportClick = {}
+                            onSwitchToProviderClick = { /* Navigate to provider registration */ },
+                            onLogoutClick = {
+                                // Handle logout
+                                navController.navigate(Screen.Login.route) {
+                                    popUpTo(Screen.CustomerHome.route) { inclusive = true }
+                                }
+                            },
+                            onFavoritesClick = { /* Navigate to favorites */ },
+                            onPaymentMethodsClick = { /* Navigate to payment methods */ },
+                            onPrivacySecurityClick = { /* Navigate to privacy settings */ },
+                            onHelpSupportClick = { /* Navigate to help & support */ }
                         )
                     }
                 }

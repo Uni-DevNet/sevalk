@@ -20,7 +20,9 @@ data class ServiceProvider(
     val isAvailable: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val status: ProviderStatus = ProviderStatus.PENDING
+    val status: ProviderStatus = ProviderStatus.PENDING,
+    val totalEarnings: Double = 0.0,
+    val totalJobs: Int = 0
 ) {
     companion object {
         private val gson = Gson()

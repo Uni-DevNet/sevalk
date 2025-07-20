@@ -11,17 +11,17 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.HelpOutline
+import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.Payments
 import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MailOutline
-import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material3.*
 import androidx.compose.runtime.* // Import for remember and mutableStateOf
 import androidx.compose.ui.Alignment
@@ -37,6 +37,10 @@ import androidx.compose.ui.unit.sp
 import com.sevalk.R
 import androidx.navigation.NavController
 import com.sevalk.presentation.navigation.Screen
+import com.sevalk.presentation.customer.profile.CustomerProfileViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import android.util.Log
+import androidx.compose.material.icons.filled.HelpOutline
 
 // Data class to hold profile information
 data class UserProfile(
@@ -55,279 +59,288 @@ data class UserProfile(
 @Composable
 fun CustomerProfileScreen(
     navController: NavController,
-    initialUserProfile: UserProfile, // Changed to initialUserProfile to manage mutable state internally
+    viewModel: CustomerProfileViewModel = hiltViewModel(),
     onSwitchToProviderClick: () -> Unit,
-    // onEditProfileClick will now be handled internally to show the popup
     onLogoutClick: () -> Unit,
     onFavoritesClick: () -> Unit,
     onPaymentMethodsClick: () -> Unit,
     onPrivacySecurityClick: () -> Unit,
     onHelpSupportClick: () -> Unit
 ) {
-    // State to hold the current user profile, so it can be updated by the popup
-    var userProfile by remember { mutableStateOf(initialUserProfile) }
-
-    // State to control the visibility of the edit profile popup
+    val userProfile by viewModel.userProfile.collectAsState()
     var showEditProfilePopup by remember { mutableStateOf(false) }
 
-    // Define consistent colors
-    val YellowHighlight = Color(0xFFFDD835)
-    val CardBackground = Color(0xFFF8F9FA) // Light gray background for cards
+    // Add debug logging
+    LaunchedEffect(Unit) {
+        Log.d("ProfileScreen", "Screen launched")
+    }
 
-    Scaffold(
+    userProfile?.let { profile ->
+        Log.d("ProfileScreen", "Rendering profile for: ${profile.name}")
 
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .background(Color.White)
-        ) {
-            // Profile Header Section
-            Button(
-                onClick = onSwitchToProviderClick,
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = YellowHighlight,
-                    contentColor = Color.Black
-                ),
-                shape = RoundedCornerShape(20.dp),
-                contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
-                modifier = Modifier.padding(end = 8.dp)
-                    .align(Alignment.End)
-            ) {
-                Text("Switch to Provider", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-            }
-            Spacer(modifier = Modifier.height(8.dp))
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
+        // Define consistent colors
+        val YellowHighlight = Color(0xFFFDD835)
+        val CardBackground = Color(0xFFF8F9FA) // Light gray background for cards
+
+        Scaffold(
+
+        ) { paddingValues ->
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .background(Color.White)
             ) {
-                // Profile Picture
-                Box(
-                    contentAlignment = Alignment.BottomEnd,
-                    modifier = Modifier.size(80.dp)
+                // Profile Header Section
+                Button(
+                    onClick = onSwitchToProviderClick,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = YellowHighlight,
+                        contentColor = Color.Black
+                    ),
+                    shape = RoundedCornerShape(20.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 2.dp),
+                    modifier = Modifier.padding(end = 8.dp)
+                        .align(Alignment.End)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .background(Color.LightGray)
-                    )
-                    // Edit icon for profile picture - this will open the popup
-                    Box(
-                        modifier = Modifier
-                            .size(24.dp)
-                            .clip(CircleShape)
-                            .background(YellowHighlight)
-                            .border(1.dp, Color.White, CircleShape)
-                            .clickable(onClick = { showEditProfilePopup = true }) // Open popup on click
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.camera), // Use a camera icon here or Icons.Default.Edit
-                            contentDescription = "Edit Profile",
-                            tint = Color.Black,
-                            modifier = Modifier
-                                .size(16.dp)
-                                .align(Alignment.Center)
-                        )
-                    }
+                    Text("Switch to Provider", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
                 }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                Column(
-                    modifier = Modifier.weight(1f)
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
                 ) {
-                    Text(
-                        text = userProfile.name,
-                        style = MaterialTheme.typography.headlineSmall,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Text(
-                        text = "Member since ${userProfile.memberSince}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.Gray
-                    )
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(
-                            imageVector = Icons.Default.LocationOn,
-                            contentDescription = "Location",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(16.dp)
+                    // Profile Picture
+                    Box(
+                        contentAlignment = Alignment.BottomEnd,
+                        modifier = Modifier.size(80.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(80.dp)
+                                .clip(CircleShape)
+                                .background(Color.LightGray)
                         )
-                        Spacer(modifier = Modifier.width(4.dp))
+                        // Edit icon for profile picture - this will open the popup
+                        Box(
+                            modifier = Modifier
+                                .size(24.dp)
+                                .clip(CircleShape)
+                                .background(YellowHighlight)
+                                .border(1.dp, Color.White, CircleShape)
+                                .clickable(onClick = { showEditProfilePopup = true }) // Open popup on click
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.camera), // Use a camera icon here or Icons.Default.Edit
+                                contentDescription = "Edit Profile",
+                                tint = Color.Black,
+                                modifier = Modifier
+                                    .size(16.dp)
+                                    .align(Alignment.Center)
+                            )
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp))
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
                         Text(
-                            text = userProfile.location,
+                            text = profile.name,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            text = "Member since ${profile.memberSince}",
                             style = MaterialTheme.typography.bodyMedium,
                             color = Color.Gray
                         )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = "Location",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = profile.location,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                        }
                     }
-                }
-                // Edit profile icon - this will also open the popup
-                IconButton(
-                    onClick = { showEditProfilePopup = true }, // Open popup on click
-                    modifier = Modifier.padding(start = 8.dp)
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Edit,
-                        contentDescription = "Edit Profile",
-                        tint = Color.Gray
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Your Activity Section
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = CardBackground)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-                    Text(
-                        text = "Your Activity",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceAround
+                    // Edit profile icon - this will also open the popup
+                    IconButton(
+                        onClick = { showEditProfilePopup = true }, // Open popup on click
+                        modifier = Modifier.padding(start = 8.dp)
                     ) {
-                        ActivityStat(label = "Total Bookings", value = userProfile.totalBookings.toString())
-                        ActivityStat(label = "Completed", value = userProfile.completedBookings.toString())
-                        ActivityStat(label = "Rating", value = userProfile.rating.toString(), highlight = true)
+                        Icon(
+                            imageVector = Icons.Default.Edit,
+                            contentDescription = "Edit Profile",
+                            tint = Color.Gray
+                        )
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(24.dp))
 
-            // Contact Information Section
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = CardBackground)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
+                // Your Activity Section
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardBackground)
                 ) {
-                    Text(
-                        text = "Contact Information",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    Spacer(modifier = Modifier.height(12.dp))
-                    ContactInfoItem(icon = Icons.Default.MailOutline, label = "Email Address", value = userProfile.email)
-                    ContactInfoItem(icon = Icons.Default.Phone, label = "Phone Number", value = userProfile.phoneNumber)
-                    // Changed label back to "Join Date" for consistency with userProfile.joinDate
-                    ContactInfoItem(icon = Icons.Default.CalendarToday, label = "Join Date", value = "Member since ${userProfile.joinDate}")
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Your Activity",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceAround
+                        ) {
+                            ActivityStat(label = "Total Bookings", value = profile.totalBookings.toString())
+                            ActivityStat(label = "Completed", value = profile.completedBookings.toString())
+                            ActivityStat(label = "Rating", value = profile.rating.toString(), highlight = true)
+                        }
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            // Navigation Items Section
-            Card(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(containerColor = CardBackground)
-            ) {
-                Column {
-                    NavigationItem(
-                        icon = Icons.Default.FavoriteBorder,
-                        label = "Favorites",
-                        description = "Your saved services",
-                        onClick = onFavoritesClick
-                    )
-                    Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
-                    NavigationItem(
-                        icon = Icons.Default.Payments,
-                        label = "Payment Methods",
-                        description = "Manage cards & payments",
-                        onClick = onPaymentMethodsClick
-                    )
-                    Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
-                    NavigationItem(
-                        icon = Icons.Default.Lock,
-                        label = "Privacy & Security",
-                        description = "Account protection",
-                        onClick = onPrivacySecurityClick
-                    )
-                    Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
-                    NavigationItem(
-                        icon = Icons.Default.HelpOutline,
-                        label = "Help & Support",
-                        description = "Get assistance",
-                        onClick = onHelpSupportClick
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            // Log Out Button
-            OutlinedButton(
-                onClick = onLogoutClick,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(50.dp)
-                    .padding(horizontal = 16.dp),
-                colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
-                    contentColor = Color.Red
-                ),
-                border = BorderStroke(1.dp, Color.Red),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.Center
+                // Contact Information Section
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardBackground)
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Logout,
-                        contentDescription = "Log Out",
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Log Out",
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Column(
+                        modifier = Modifier.padding(16.dp)
+                    ) {
+                        Text(
+                            text = "Contact Information",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        ContactInfoItem(icon = Icons.Default.MailOutline, label = "Email Address", value = profile.email)
+                        ContactInfoItem(icon = Icons.Default.Phone, label = "Phone Number", value = profile.phoneNumber)
+                        // Changed label back to "Join Date" for consistency with userProfile.joinDate
+                        ContactInfoItem(icon = Icons.Default.CalendarToday, label = "Join Date", value = "Member since ${profile.joinDate}")
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                // Navigation Items Section
+                Card(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = CardBackground)
+                ) {
+                    Column {
+                        NavigationItem(
+                            icon = Icons.Default.FavoriteBorder,
+                            label = "Favorites",
+                            description = "Your saved services",
+                            onClick = onFavoritesClick
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                        NavigationItem(
+                            icon = Icons.Default.Payments,
+                            label = "Payment Methods",
+                            description = "Manage cards & payments",
+                            onClick = onPaymentMethodsClick
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                        NavigationItem(
+                            icon = Icons.Default.Lock,
+                            label = "Privacy & Security",
+                            description = "Account protection",
+                            onClick = onPrivacySecurityClick
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                        NavigationItem(
+                            icon = Icons.Default.HelpOutline,
+                            label = "Help & Support",
+                            description = "Get assistance",
+                            onClick = onHelpSupportClick
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                // Log Out Button
+                OutlinedButton(
+                    onClick = onLogoutClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(50.dp)
+                        .padding(horizontal = 16.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = Color.Red
+                    ),
+                    border = BorderStroke(1.dp, Color.Red),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.Logout,
+                            contentDescription = "Log Out",
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            "Log Out",
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(24.dp))
             }
 
-            Spacer(modifier = Modifier.height(24.dp))
+            // --- Edit Profile Popup Integration ---
+            if (showEditProfilePopup) {
+                EditProfilePopup(
+                    userProfile = profile, // Pass the current userProfile data to the popup
+                    onDismiss = { showEditProfilePopup = false }, // Hide popup on dismiss
+                    onSave = { newName, newPhoneNumber ->
+                        // Update the userProfile state with the new values
+                        viewModel.updateUserProfile(
+                            name = newName,
+                            phoneNumber = newPhoneNumber
+                        )
+                        showEditProfilePopup = false // Hide popup after saving
+                        // TODO: In a real app, you would also trigger an API call to save these changes
+                        // to your backend or data layer.
+                    }
+                )
+            }
         }
-
-        // --- Edit Profile Popup Integration ---
-        if (showEditProfilePopup) {
-            EditProfilePopup(
-                userProfile = userProfile, // Pass the current userProfile data to the popup
-                onDismiss = { showEditProfilePopup = false }, // Hide popup on dismiss
-                onSave = { newName, newPhoneNumber ->
-                    // Update the userProfile state with the new values
-                    userProfile = userProfile.copy(
-                        name = newName,
-                        phoneNumber = newPhoneNumber
-                    )
-                    showEditProfilePopup = false // Hide popup after saving
-                    // TODO: In a real app, you would also trigger an API call to save these changes
-                    // to your backend or data layer.
-                }
-            )
+    } ?: run {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
     }
 }
@@ -413,7 +426,7 @@ fun NavigationItem(icon: ImageVector, label: String, description: String, onClic
             )
         }
         Icon(
-            imageVector = Icons.Default.ArrowForwardIos,
+            imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
             contentDescription = "Navigate",
             tint = Color.Gray,
             modifier = Modifier.size(16.dp)
