@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.sevalk.data.repositories.AuthRepository
+import com.sevalk.presentation.auth.AuthStateManager
 import com.sevalk.utils.GoogleSignInHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -20,6 +21,7 @@ import javax.inject.Inject
 @HiltViewModel
 class LoginViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val authStateManager: AuthStateManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
 
@@ -86,6 +88,8 @@ class LoginViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { user ->
                         Timber.d("Login successful for user: ${user.uid}")
+                        // Refresh auth state to trigger navigation
+                        authStateManager.refreshAuthState()
                         _uiState.update { 
                             it.copy(
                                 isLoading = false,
@@ -163,7 +167,8 @@ class LoginViewModel @Inject constructor(
                                 val userDataResult = authRepository.getUserData(user.uid)
                                 userDataResult.fold(
                                     onSuccess = { userData ->
-                                        // User exists, login successful
+                                        // User exists, refresh auth state
+                                        authStateManager.refreshAuthState()
                                         _uiState.update { it.copy(isLoading = false, errorMessage = null) }
                                         onLoginSuccess()
                                     },

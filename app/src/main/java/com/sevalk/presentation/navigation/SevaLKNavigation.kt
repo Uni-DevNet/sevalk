@@ -25,16 +25,48 @@ import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 import com.sevalk.presentation.provider.home.ProviderHomeScreen
 import com.sevalk.presentation.provider.service.ServiceSelectionScreen
 import com.sevalk.presentation.customer.payment.PaymentScreen
+import com.sevalk.presentation.splash.SplashScreen
 
 @Composable
 fun SevaLKNavigation(
     navController: NavHostController = rememberNavController(),
-    startDestination: String = Screen.Onboarding.route
+    startDestination: String = Screen.Splash.route
 ) {
     NavHost(
         navController = navController,
         startDestination = startDestination
     ) {
+        // Splash Screen - Entry point
+        composable(Screen.Splash.route) {
+            SplashScreen(
+                onNavigateToOnboarding = {
+                    navController.navigate(Screen.Onboarding.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToLogin = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                },
+                onNavigateToHome = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Splash.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        // Onboarding Flow
+        composable(Screen.Onboarding.route) {
+            OnboardingScreen(
+                onGetStarted = {
+                    navController.navigate(Screen.Welcome.route) {
+                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    }
+                }
+            )
+        }
         // Authentication Flow
         composable(Screen.Welcome.route) {
             WelcomeScreen(

@@ -4,8 +4,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.sevalk.presentation.auth.AuthState
+import com.sevalk.presentation.auth.AuthViewModel
 import com.sevalk.presentation.chat.ChatScreen
 import com.sevalk.presentation.customer.booking.MyBookingsScreen
 import com.sevalk.presentation.customer.home.HomeScreen
@@ -21,10 +24,32 @@ import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 @Composable
 fun MainNavigation(
     navController: NavController,
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
+    val authState by remember { derivedStateOf { authViewModel.authState } }
+    val isProviderMode by remember { derivedStateOf { authViewModel.isProviderMode } }
+    
+    // Handle auth state changes
+    LaunchedEffect(authState) {
+        when (authState) {
+            AuthState.UNAUTHENTICATED -> {
+                navController.navigate(Screen.Login.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                }
+            }
+            AuthState.FIRST_TIME_USER -> {
+                navController.navigate(Screen.Onboarding.route) {
+                    popUpTo(Screen.Home.route) { inclusive = true }
+                }
+            }
+            else -> {
+                // Stay on current screen
+            }
+        }
+    }
+
     var customerSelectedTab by remember { mutableStateOf(CustomerNavigationTab.HOME) }
     var providerSelectedTab by remember { mutableStateOf(ProviderNavigationTab.DASHBOARD) }
-    var isProviderMode by remember { mutableStateOf(false) }
     var showCreateBillScreen by remember { mutableStateOf(false) }
     var selectedJobForBill by remember { mutableStateOf<com.sevalk.data.models.Job?>(null) }
     
@@ -33,7 +58,7 @@ fun MainNavigation(
     
     // Function to switch to provider mode
     val switchToProviderMode = {
-        isProviderMode = true
+        authViewModel.updateProviderMode(true)
         // If switching from customer profile, go to provider profile (BUSINESS tab)
         providerSelectedTab = if (customerSelectedTab == CustomerNavigationTab.PROFILE) {
             ProviderNavigationTab.BUSINESS
@@ -44,7 +69,7 @@ fun MainNavigation(
     
     // Function to switch to customer mode
     val switchToCustomerMode = {
-        isProviderMode = false
+        authViewModel.updateProviderMode(false)
         customerSelectedTab = if (providerSelectedTab == ProviderNavigationTab.BUSINESS) {
             CustomerNavigationTab.PROFILE
         } else {

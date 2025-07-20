@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import com.sevalk.presentation.navigation.Screen
 import com.sevalk.presentation.navigation.SevaLKNavigation
 import com.sevalk.ui.theme.SevaLKTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -25,7 +26,9 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = Color.White
                 ) {
-                    SevaLKNavigation()
+                    SevaLKNavigation(
+                        startDestination = Screen.Splash.route
+                    )
                 }
             }
         }

@@ -19,9 +19,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.launch
 import com.sevalk.R
 import com.sevalk.presentation.components.common.PrimaryButton
+import com.sevalk.presentation.auth.AuthViewModel
 import com.sevalk.ui.theme.S_YELLOW
 
 data class OnboardingPage(
@@ -37,7 +39,8 @@ data class OnboardingPage(
 @Composable
 fun OnboardingScreen(
     modifier: Modifier = Modifier,
-    onGetStarted: () -> Unit = {}
+    onGetStarted: () -> Unit = {},
+    authViewModel: AuthViewModel = hiltViewModel()
 ) {
     val pages = listOf(
         OnboardingPage(
@@ -91,6 +94,8 @@ fun OnboardingScreen(
                         pagerState.animateScrollToPage(pagerState.currentPage + 1)
                     }
                 } else {
+                    // Mark onboarding as completed
+                    authViewModel.markOnboardingCompleted()
                     onGetStarted()
                 }
             },

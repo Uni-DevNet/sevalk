@@ -13,17 +13,47 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import kotlinx.coroutines.delay
 import com.sevalk.R
+import com.sevalk.presentation.auth.AuthState
+import com.sevalk.presentation.auth.AuthViewModel
 
 @Composable
 fun SplashScreen(
-    onNavigateToOnboarding: () -> Unit,
+    onNavigateToOnboarding: () -> Unit = {},
+    onNavigateToLogin: () -> Unit = {},
+    onNavigateToHome: () -> Unit = {},
+    authViewModel: AuthViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
+    val authState by remember { derivedStateOf { authViewModel.authState } }
+
     LaunchedEffect(Unit) {
-        delay(3000)
-        onNavigateToOnboarding()
+        // Show splash screen for at least 2 seconds
+        delay(2000)
+        authViewModel.checkInitialAuthState()
+    }
+
+    // Handle navigation based on auth state
+    LaunchedEffect(authState) {
+        when (authState) {
+            AuthState.FIRST_TIME_USER -> {
+                delay(500) // Small delay for smooth transition
+                onNavigateToOnboarding()
+            }
+            AuthState.AUTHENTICATED -> {
+                delay(500)
+                onNavigateToHome()
+            }
+            AuthState.UNAUTHENTICATED -> {
+                delay(500)
+                onNavigateToLogin()
+            }
+            AuthState.LOADING -> {
+                // Stay on splash screen
+            }
+        }
     }
 
     Box(
