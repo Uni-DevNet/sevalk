@@ -127,15 +127,18 @@ class LoginViewModel @Inject constructor(
     }
     
     fun initiateGoogleSignIn(onSignInIntentReady: (android.content.Intent) -> Unit) {
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
+        
         viewModelScope.launch {
             try {
                 val signInIntent = googleSignInHelper.getSignInIntent()
+                _uiState.update { it.copy(isLoading = false) }
                 onSignInIntentReady(signInIntent)
             } catch (e: Exception) {
                 Timber.e(e, "Failed to create Google Sign-In intent")
                 _uiState.update { 
                     it.copy(
-                        errorMessage = "Failed to start Google Sign-In: ${e.message ?: "Unknown error"}",
+                        errorMessage = "Failed to start Google Sign-In. Please try again.",
                         isLoading = false
                     )
                 }
@@ -148,7 +151,7 @@ class LoginViewModel @Inject constructor(
         onNavigateToUserTypeSelection: (String, String) -> Unit,
         onLoginSuccess: () -> Unit
     ) {
-        _uiState.update { it.copy(isLoading = true) }
+        _uiState.update { it.copy(isLoading = true, errorMessage = null) }
         
         viewModelScope.launch {
             try {
@@ -182,36 +185,39 @@ class LoginViewModel @Inject constructor(
                                 )
                             },
                             onFailure = { exception ->
-                                Timber.e(exception, "Google Sign-In failed")
+                                Timber.e(exception, "Google authentication failed")
                                 _uiState.update { 
                                     it.copy(
-                                        errorMessage = "Google Sign-In failed: ${exception.message ?: "Unknown error"}",
+                                        errorMessage = "Google authentication failed. Please try again.",
                                         isLoading = false
                                     )
                                 }
                             }
                         )
                     } else {
+                        Timber.w("Google Sign-In completed but no ID token received")
                         _uiState.update { 
                             it.copy(
-                                errorMessage = "Failed to get Google ID token",
+                                errorMessage = "Google Sign-In incomplete. Please try again.",
                                 isLoading = false
                             )
                         }
                     }
                 } else {
+                    // This is normal when user cancels, don't log as error
+                    Timber.d("Google Sign-In was cancelled by user")
                     _uiState.update { 
                         it.copy(
-                            errorMessage = "Google Sign-In was cancelled",
                             isLoading = false
+                            // Don't set error message for cancellation
                         )
                     }
                 }
             } catch (e: Exception) {
-                Timber.e(e, "Google Sign-In error")
+                Timber.e(e, "Unexpected error during Google Sign-In")
                 _uiState.update { 
                     it.copy(
-                        errorMessage = "Google Sign-In failed: ${e.message ?: "Unknown error"}",
+                        errorMessage = "Google Sign-In failed. Please try again.",
                         isLoading = false
                     )
                 }

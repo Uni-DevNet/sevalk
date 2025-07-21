@@ -24,11 +24,19 @@ class GoogleSignInHelper(private val context: Context) {
         val client = GoogleSignIn.getClient(context, gso)
         
         try {
-            // Sign out and revoke access to force account selection
-            client.signOut().await()
-            client.revokeAccess().await()
+            // Check if there's an existing signed-in account before clearing
+            val existingAccount = GoogleSignIn.getLastSignedInAccount(context)
+            if (existingAccount != null) {
+                // Sign out and revoke access to force account selection
+                client.signOut().await()
+                client.revokeAccess().await()
+                Timber.d("Successfully cleared existing Google Sign-In session")
+            } else {
+                Timber.d("No existing Google Sign-In session to clear")
+            }
         } catch (e: Exception) {
-            Timber.w(e, "Failed to clear Google Sign-In cache")
+            // Log as debug instead of warning since this is expected when no user is signed in
+            Timber.d(e, "No existing Google Sign-In session or failed to clear cache (this is normal)")
         }
         
         return client.signInIntent
@@ -53,10 +61,17 @@ class GoogleSignInHelper(private val context: Context) {
         
         val client = GoogleSignIn.getClient(context, gso)
         try {
-            client.signOut().await()
-            client.revokeAccess().await()
+            // Check if there's an existing signed-in account before signing out
+            val existingAccount = GoogleSignIn.getLastSignedInAccount(context)
+            if (existingAccount != null) {
+                client.signOut().await()
+                client.revokeAccess().await()
+                Timber.d("Successfully signed out from Google")
+            } else {
+                Timber.d("No Google account to sign out from")
+            }
         } catch (e: Exception) {
-            Timber.e(e, "Failed to sign out from Google")
+            Timber.d(e, "No existing Google Sign-In session or failed to sign out (this is normal)")
         }
     }
 }
