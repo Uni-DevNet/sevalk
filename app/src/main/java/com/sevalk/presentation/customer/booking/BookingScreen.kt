@@ -36,6 +36,7 @@ import com.sevalk.presentation.components.common.PrimaryButton
 import com.sevalk.presentation.components.common.PrimaryButtonStyle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
+import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,6 +44,7 @@ fun BookingScreen(
     modifier: Modifier = Modifier,
     providerId: String? = null,
     onNavigateBack: () -> Unit = {},
+    onNavigateToConfirmation: (String, String, String) -> Unit = { _, _, _ -> },
     viewModel: BookingViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableStateOf(0) }
@@ -59,6 +61,7 @@ fun BookingScreen(
     val serviceProvider by viewModel.serviceProvider.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
+    val bookingCreated by viewModel.bookingCreated.collectAsState()
     
     // Load provider details when component mounts
     LaunchedEffect(providerId) {
@@ -72,6 +75,29 @@ fun BookingScreen(
         serviceProvider?.let { provider ->
             if (selectedService.isEmpty() && provider.services.isNotEmpty()) {
                 selectedService = provider.services.first().name
+            }
+        }
+    }
+    
+    // Use provider data from database - moved before LaunchedEffect
+    val provider = serviceProvider
+    val displayName = provider?.businessName ?: ""
+    val displayRating = provider?.rating ?: 0.0f
+    val displayPrice = provider?.price ?: 0.0
+    val displayCompletedJobs = provider?.completedJobs ?: 0
+    val displayServices = provider?.services ?: emptyList()
+    val primaryService = displayServices.firstOrNull()
+    
+    // Handle booking creation success
+    LaunchedEffect(bookingCreated) {
+        bookingCreated?.let { bookingId ->
+            Timber.d("Booking created successfully with ID: $bookingId")
+            Timber.d("Navigating to confirmation with: bookingId=$bookingId, providerName=$displayName, serviceName=$selectedService")
+            try {
+                onNavigateToConfirmation(bookingId, displayName, selectedService)
+                viewModel.clearBookingCreated()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to navigate to confirmation screen")
             }
         }
     }
@@ -113,14 +139,8 @@ fun BookingScreen(
         return
     }
     
-    // Use provider data from database
-    val provider = serviceProvider ?: return
-    val displayName = provider.businessName
-    val displayRating = provider.rating
-    val displayPrice = provider.price
-    val displayCompletedJobs = provider.completedJobs
-    val displayServices = provider.services
-    val primaryService = displayServices.firstOrNull()
+    // Return early if provider is still null
+    if (provider == null) return
 
     BackHandler(enabled = selectedTab == 1) {
         selectedTab = 0
@@ -646,7 +666,24 @@ fun BookingScreen(
 
                     PrimaryButton(
                         text = "Confirm Booking",
-                        onClick = { },
+                        onClick = { 
+                            Timber.d("Creating booking with: service=$selectedService, title=$bookingTitle, date=$selectedDate, time=$selectedTime")
+                            viewModel.createBooking(
+                                selectedService = selectedService,
+                                bookingTitle = bookingTitle,
+                                description = description,
+                                selectedDate = selectedDate,
+                                selectedTime = selectedTime,
+                                onSuccess = { bookingId ->
+                                    Timber.d("Booking creation success callback called with ID: $bookingId")
+                                    // Navigation will be handled by LaunchedEffect above
+                                },
+                                onError = { errorMessage ->
+                                    Timber.e("Booking creation failed: $errorMessage")
+                                    // TODO: Show error message to user (implement snackbar or dialog)
+                                }
+                            )
+                        },
                         backgroundColor = S_YELLOW,
                         foregroundColor = Color.White,
                         style = PrimaryButtonStyle.ICON_TEXT

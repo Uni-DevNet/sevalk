@@ -39,6 +39,11 @@ object Constants {
     const val BOOKING_STATUS_IN_PROGRESS = "in_progress"
     const val BOOKING_STATUS_COMPLETED = "completed"
     const val BOOKING_STATUS_CANCELLED = "cancelled"
+    
+    // Booking Fields
+    const val FIELD_PROVIDER_NAME = "providerName"
+    const val FIELD_CUSTOMER_NAME = "customerName"
+    const val FIELD_SERVICE_NAME = "serviceName"
 
     // Message Types
     const val MESSAGE_TYPE_TEXT = "text"
