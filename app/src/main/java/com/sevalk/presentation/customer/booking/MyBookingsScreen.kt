@@ -43,8 +43,25 @@ fun MyBookingsScreen(
     val selectedFilter by viewModel.selectedFilter.collectAsState()
     
     val filters = listOf("All", "Pending", "Accepted", "Unpaid", "Completed")
-    val filteredBookings = viewModel.getFilteredBookings()
     
+    // Filter bookings based on selected filter
+    val filteredBookings = remember(bookings, selectedFilter) {
+        when (selectedFilter) {
+            "All" -> bookings
+            "Pending" -> bookings.filter { it.status == BookingStatus.PENDING }
+            "Accepted" -> bookings.filter { 
+                it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.CONFIRMED 
+            }
+            "Unpaid" -> bookings.filter { 
+                it.status == BookingStatus.COMPLETED 
+            }
+            "Completed" -> bookings.filter { 
+                it.status == BookingStatus.COMPLETED 
+            }
+            else -> bookings
+        }
+    }
+
     // Show error snackbar
     error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
@@ -191,6 +208,19 @@ fun FilterChip(
     }
 }
 
+private fun getBookingStatusInfo(status: BookingStatus): BookingStatusInfo {
+    return when (status) {
+        BookingStatus.PENDING -> BookingStatusInfo("Pending", Color(0xFFF59E0B), Color(0xFFFEF3C7))
+        BookingStatus.ACCEPTED -> BookingStatusInfo("Accepted", Color(0xFF10B981), Color(0xFFD1FAE5))
+        BookingStatus.CONFIRMED -> BookingStatusInfo("Accepted", Color(0xFF10B981), Color(0xFFD1FAE5))
+        BookingStatus.IN_PROGRESS -> BookingStatusInfo("In Progress", Color(0xFF3B82F6), Color(0xFFDBEAFE))
+        BookingStatus.COMPLETED -> BookingStatusInfo("Completed", Color(0xFF10B981), Color(0xFFD1FAE5))
+        BookingStatus.CANCELLED -> BookingStatusInfo("Cancelled", Color(0xFFEF4444), Color(0xFFFEE2E2))
+        BookingStatus.REJECTED -> BookingStatusInfo("Rejected", Color(0xFFEF4444), Color(0xFFFEE2E2))
+        else -> BookingStatusInfo("Unknown", Color.Gray, Color(0xFFF3F4F6))
+    }
+}
+
 @Composable
 fun BookingCard(
     booking: Booking,
@@ -278,19 +308,6 @@ fun BookingCard(
                 )
             }
         }
-    }
-}
-
-private fun getBookingStatusInfo(status: BookingStatus): BookingStatusInfo {
-    return when (status) {
-        BookingStatus.PENDING -> BookingStatusInfo("Pending", Color(0xFFF59E0B), Color(0xFFFEF3C7))
-        BookingStatus.ACCEPTED -> BookingStatusInfo("Accepted", Color(0xFF10B981), Color(0xFFD1FAE5))
-        BookingStatus.CONFIRMED -> BookingStatusInfo("Confirmed", Color(0xFF10B981), Color(0xFFD1FAE5))
-        BookingStatus.IN_PROGRESS -> BookingStatusInfo("In Progress", Color(0xFF3B82F6), Color(0xFFDBEAFE))
-        BookingStatus.COMPLETED -> BookingStatusInfo("Completed", Color(0xFF10B981), Color(0xFFD1FAE5))
-        BookingStatus.CANCELLED -> BookingStatusInfo("Cancelled", Color(0xFFEF4444), Color(0xFFFEE2E2))
-        BookingStatus.REJECTED -> BookingStatusInfo("Rejected", Color(0xFFEF4444), Color(0xFFFEE2E2))
-        else -> BookingStatusInfo("Unknown", Color.Gray, Color(0xFFF3F4F6))
     }
 }
 
