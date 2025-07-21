@@ -11,7 +11,6 @@ data class ServiceProvider(
     val services: List<Service> = emptyList(),
     val price: String = "", // Add price field for service provider pricing
     val serviceRadius: Double = 10.0, // in kilometers
-    val serviceLocation: ServiceLocation = ServiceLocation(),
     val experience: Int = 0, // Years of experience
     val rating: Float = 0.0f,
     val totalReviews: Int = 0,
@@ -21,7 +20,14 @@ data class ServiceProvider(
     val isAvailable: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val status: ProviderStatus = ProviderStatus.PENDING
+    val status: ProviderStatus = ProviderStatus.PENDING,
+    val totalEarnings: Double = 0.0,
+    val totalJobs: Int = 0,
+    val city: String = "",
+    val province: String = "",
+    val latitude: Double = 0.0,
+    val longitude: Double = 0.0,
+    val serviceLocation: ServiceLocation = ServiceLocation()
 ) {
     companion object {
         private val gson = Gson()
@@ -62,4 +68,6 @@ data class ServiceProvider(
 enum class ProviderStatus {
     PENDING, APPROVED, SUSPENDED, REJECTED
 }
+
+
 

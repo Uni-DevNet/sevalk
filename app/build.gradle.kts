@@ -125,4 +125,6 @@ dependencies {
     implementation(platform("androidx.compose:compose-bom:2023.06.01"))
     implementation("com.jakewharton.timber:timber:5.0.1")
     implementation("com.google.code.gson:gson:2.10.1")
+    implementation ("com.google.firebase:firebase-firestore-ktx:24.9.1")
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
 }

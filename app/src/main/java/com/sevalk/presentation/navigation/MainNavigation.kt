@@ -3,10 +3,12 @@ package com.sevalk.presentation.navigation
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.sevalk.data.models.Job
 import com.sevalk.presentation.auth.AuthState
 import com.sevalk.presentation.auth.AuthViewModel
 import com.sevalk.presentation.chat.ChatScreen
@@ -14,10 +16,9 @@ import com.sevalk.presentation.customer.booking.MyBookingsScreen
 import com.sevalk.presentation.customer.home.HomeScreen
 import com.sevalk.presentation.customer.search.ServiceProviderMapScreen
 import com.sevalk.presentation.customer.profile.CustomerProfileScreen
-import com.sevalk.presentation.customer.profile.UserProfile
 import com.sevalk.presentation.provider.home.ProviderHomeScreen
+import com.sevalk.presentation.provider.jobs.CreateServiceBillScreen
 import com.sevalk.presentation.provider.jobs.JobsScreen
-import com.sevalk.presentation.provider.profile.ProviderProfile
 import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -28,7 +29,7 @@ fun MainNavigation(
 ) {
     val authState by remember { derivedStateOf { authViewModel.authState } }
     val isProviderMode by remember { derivedStateOf { authViewModel.isProviderMode } }
-    
+
     // Handle auth state changes
     LaunchedEffect(authState) {
         when (authState) {
@@ -51,7 +52,7 @@ fun MainNavigation(
     var customerSelectedTab by remember { mutableStateOf(CustomerNavigationTab.HOME) }
     var providerSelectedTab by remember { mutableStateOf(ProviderNavigationTab.DASHBOARD) }
     var showCreateBillScreen by remember { mutableStateOf(false) }
-    var selectedJobForBill by remember { mutableStateOf<com.sevalk.data.models.Job?>(null) }
+    var selectedJobForBill by remember { mutableStateOf<Job?>(null) }
     
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -79,7 +80,7 @@ fun MainNavigation(
 
     // Show CreateServiceBillScreen if needed
     if (showCreateBillScreen && selectedJobForBill != null) {
-        com.sevalk.presentation.provider.jobs.CreateServiceBillScreen(
+        CreateServiceBillScreen(
             job = selectedJobForBill!!,
             onBackClick = {
                 showCreateBillScreen = false
@@ -178,24 +179,18 @@ fun MainNavigation(
                     }
                     ProviderNavigationTab.BUSINESS -> {
                         ProviderProfileScreen(
-                            initialProviderProfile = ProviderProfile(
-                                name = "John Plumbing",
-                                memberSince = "March 2023",
-                                completedJobs = 43,
-                                totalJobs = 327,
-                                location = "Weligama, Southern Province",
-                                totalEarnings = "LKR 45,600",
-                                email = "john.obus@email.com",
-                                phoneNumber = "+44 77 123 4567",
-                                isAvailable = true,
-                                responseTime = "1 hour"
-                            ),
-                            onLogoutClick = {},
-                            onServicesClick = {},
-                            onPaymentMethodsClick = {},
+                            navController = navController,
+                            onLogoutClick = {
+                                authViewModel.signOut()
+                            },
+                            onServicesClick = {
+                                navController.navigate("provider/services")
+                            },
+                            onPaymentMethodsClick = {
+                                navController.navigate("provider/payments")
+                            },
                             onPrivacySecurityClick = {},
                             onHelpSupportClick = {},
-                            navController = navController,
                             onSwitchToCustomerClick = switchToCustomerMode
                         )
                     }
@@ -224,23 +219,14 @@ fun MainNavigation(
                     CustomerNavigationTab.PROFILE -> {
                         CustomerProfileScreen(
                             navController = navController,
-                            initialUserProfile = UserProfile(
-                                name = "John Smith",
-                                memberSince = "March 2023",
-                                location = "Weligama, Southern Province",
-                                totalBookings = 24,
-                                completedBookings = 10,
-                                rating = 4.8,
-                                email = "john.doe@email.com",
-                                phoneNumber = "+94 77 123 4567",
-                                joinDate = "March 2023"
-                            ),
                             onSwitchToProviderClick = switchToProviderMode,
-                            onLogoutClick = {},
+                            onLogoutClick = {
+                                authViewModel.signOut()
+                            },
                             onFavoritesClick = {},
-                            onPaymentMethodsClick = {},
-                            onPrivacySecurityClick = {},
-                            onHelpSupportClick = {}
+                            onPaymentMethodsClick = {  },
+                            onPrivacySecurityClick = {  },
+                            onHelpSupportClick = {  }
                         )
                     }
                 }

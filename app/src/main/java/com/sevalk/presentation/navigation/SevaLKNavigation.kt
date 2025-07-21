@@ -1,11 +1,13 @@
 package com.sevalk.presentation.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import com.sevalk.domain.payment.PaymentViewModel
 import androidx.navigation.navArgument
 import com.sevalk.presentation.auth.google.UserTypeSelectionScreen
 import com.sevalk.presentation.auth.login.LoginScreen
@@ -27,6 +29,7 @@ import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 import com.sevalk.presentation.provider.home.ProviderHomeScreen
 import com.sevalk.presentation.provider.service.ServiceSelectionScreen
 import com.sevalk.presentation.customer.payment.PaymentScreen
+import com.sevalk.presentation.customer.payment.PaymentSuccessScreen
 import com.sevalk.presentation.splash.SplashScreen
 
 @Composable
@@ -228,18 +231,6 @@ fun SevaLKNavigation(
         
         composable(Screen.ProviderProfile.route) {
             ProviderProfileScreen(
-                initialProviderProfile = ProviderProfile(
-                    name = "John Plumbing",
-                    memberSince = "March 2023",
-                    completedJobs = 43,
-                    totalJobs = 327,
-                    location = "Weligama, Southern Province",
-                    totalEarnings = "LKR 45,600",
-                    email = "john.obus@email.com",
-                    phoneNumber = "+44 77 123 4567",
-                    isAvailable = true,
-                    responseTime = "1 hour"
-                ),
                 onLogoutClick = {},
                 onServicesClick = {},
                 onPaymentMethodsClick = {},
@@ -283,17 +274,31 @@ fun SevaLKNavigation(
 
         composable("payment/{bookingId}") { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+            val paymentViewModel = hiltViewModel<PaymentViewModel>()
             PaymentScreen(
+                viewModel = paymentViewModel,
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onPayClick = { paymentMethod, cardDetails ->
-                    // Handle payment completion - navigate back to bookings or show success
+                onPaymentSuccess = {
+                    navController.navigate("payment_success") {
+                        popUpTo("payment") { inclusive = true }
+                    }
+                }
+            )
+        }
+        
+        composable("payment_success") {
+            PaymentSuccessScreen(
+                amount = 2500.0,
+                onBackToHome = {
                     navController.navigate("home") {
-                        popUpTo("booking") { inclusive = true }
+                        popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
     }
+
+
 }

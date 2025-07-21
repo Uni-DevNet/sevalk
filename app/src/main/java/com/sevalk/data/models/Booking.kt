@@ -71,7 +71,3 @@ enum class BookingPriority {
 enum class BookingEvent {
     CREATED, ACCEPTED, REJECTED, CONFIRMED, STARTED, PAUSED, RESUMED, COMPLETED, CANCELLED, DISPUTED, REFUNDED
 }
-
-enum class PaymentStatus {
-    PENDING, PARTIAL, COMPLETED, FAILED, REFUNDED
-}
