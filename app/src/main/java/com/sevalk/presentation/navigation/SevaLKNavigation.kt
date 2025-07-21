@@ -3,16 +3,19 @@ package com.sevalk.presentation.navigation
 import androidx.compose.runtime.Composable
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.sevalk.domain.payment.PaymentViewModel
+import androidx.navigation.navArgument
 import com.sevalk.presentation.auth.google.UserTypeSelectionScreen
 import com.sevalk.presentation.auth.login.LoginScreen
 import com.sevalk.presentation.auth.registration.RegistrationScreen
 import com.sevalk.presentation.auth.welcome.WelcomeScreen
 import com.sevalk.presentation.chat.ChatScreen
 import com.sevalk.presentation.chat.InboxScreen
+import com.sevalk.presentation.customer.booking.BookingConfirmationScreen
 import com.sevalk.presentation.customer.booking.BookingDetailsScreen
 import com.sevalk.presentation.customer.booking.BookingScreen
 import com.sevalk.presentation.customer.home.HomeScreen
@@ -178,14 +181,47 @@ fun SevaLKNavigation(
             )
         }
         
-        composable(Screen.Booking.route) {
+        composable(
+            route = "booking/{providerId}",
+            arguments = listOf(
+                navArgument("providerId") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val providerId = backStackEntry.arguments?.getString("providerId")
             BookingScreen(
-                onNavigateBack = {
-                    navController.popBackStack()
+                providerId = providerId,
+                onNavigateBack = { 
+                    navController.popBackStack() 
+                },
+                onNavigateToConfirmation = { bookingId, providerName, serviceName ->
+                    navController.navigate(
+                        Screen.BookingConfirmation.createRoute(bookingId, providerName, serviceName)
+                    ) {
+                        popUpTo("booking/$providerId") { inclusive = true }
+                    }
                 }
             )
         }
-        
+
+        composable(
+            route = "booking_confirmation/{bookingId}/{providerName}/{serviceName}",
+            arguments = listOf(
+                navArgument("bookingId") { type = NavType.StringType },
+                navArgument("providerName") { type = NavType.StringType },
+                navArgument("serviceName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+            val providerName = backStackEntry.arguments?.getString("providerName") ?: ""
+            val serviceName = backStackEntry.arguments?.getString("serviceName") ?: ""
+            BookingConfirmationScreen(
+                navController = navController,
+                bookingId = bookingId,
+                providerName = providerName,
+                serviceName = serviceName
+            )
+        }
+
         // Provider Flow
         composable(Screen.CustomerHome.route) {
             HomeScreen(

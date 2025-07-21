@@ -9,6 +9,7 @@ data class ServiceProvider(
     val businessName: String = "",
     val description: String = "",
     val services: List<Service> = emptyList(),
+    val price: String = "", // Add price field for service provider pricing
     val serviceRadius: Double = 10.0, // in kilometers
     val experience: Int = 0, // Years of experience
     val rating: Float = 0.0f,

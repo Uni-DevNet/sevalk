@@ -1,5 +1,7 @@
-package com.sevalk.presentation.customer.home
+package com.sevalk.presentation.customer.search
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -22,7 +24,6 @@ import com.sevalk.presentation.components.map.ServiceProvider
 import com.sevalk.presentation.components.map.ServiceType
 import com.sevalk.presentation.components.map.SearchBar
 import com.sevalk.presentation.components.map.ServiceTypeFilters
-import com.sevalk.data.repositories.ServiceProviderRepository
 import com.sevalk.presentation.components.common.PrimaryButton
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.ui.res.painterResource
@@ -30,44 +31,50 @@ import com.sevalk.ui.theme.S_YELLOW
 import androidx.navigation.NavController
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.android.gms.maps.model.LatLng
+import com.sevalk.presentation.components.map.calculateDistance
+
 
 @Composable
 fun ServiceProviderMapScreen(
+    viewModel: SearchViewModel = hiltViewModel(),
     navController: NavController? = null,
     onNavigateToBooking: () -> Unit = {}
 ) {
     var selectedServiceType by remember { mutableStateOf(ServiceType.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedProvider by remember { mutableStateOf<ServiceProvider?>(null) }
-    val allServiceProviders = remember { ServiceProviderRepository.getServiceProviders() }
-    val filteredProviders = remember(searchQuery, selectedServiceType) {
-        val searchFiltered = if (searchQuery.isBlank()) {
-            allServiceProviders
-        } else {
-            ServiceProviderRepository.searchServiceProviders(searchQuery)
-        }
-        
-        if (selectedServiceType == ServiceType.ALL) {
-            searchFiltered
-        } else {
-            searchFiltered.filter { it.type == selectedServiceType }
-        }
-    }
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+    val providers by viewModel.serviceProviders.collectAsState()
 
+    LaunchedEffect(searchQuery, selectedServiceType) {
+        viewModel.searchProviders(searchQuery, selectedServiceType)
+    }
+    
     Box(modifier = Modifier.fillMaxSize()) {
         MapService(
-            serviceProviders = filteredProviders,
+            serviceProviders = providers,
             selectedServiceType = selectedServiceType,
             showCurrentLocation = true,
             onMarkerClick = { provider ->
                 selectedProvider = provider
+            },
+            onLocationChanged = { location -> 
+                currentLocation = location
             },
             modifier = Modifier.fillMaxSize()
         )
 
         SearchBar(
             query = searchQuery,
-            onQueryChange = { searchQuery = it },
+            onQueryChange = { 
+                searchQuery = it
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
@@ -114,8 +121,10 @@ fun ServiceProviderMapScreen(
                     onDismiss = { selectedProvider = null },
                     onBookNow = {
                         selectedProvider = null
-                        navController?.navigate("booking") ?: onNavigateToBooking()
+                        // Pass the provider ID to the booking screen
+                        navController?.navigate("booking/${provider.id}")
                     },
+                    currentLocation = currentLocation,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(bottom = 1.dp)
@@ -125,14 +134,29 @@ fun ServiceProviderMapScreen(
     }
 }
 
-@Composable
+@Composable 
 fun ProviderInfoCard(
     provider: ServiceProvider,
     onDismiss: () -> Unit,
     onBookNow: () -> Unit = {},
+    currentLocation: LatLng? = null,
     modifier: Modifier = Modifier
 ) {
     var isFavorite by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+
+    val distance = remember(currentLocation) {
+        if (currentLocation != null) {
+            val distanceInMeters = calculateDistance(
+                currentLocation.latitude,
+                currentLocation.longitude, 
+                provider.latitude,
+                provider.longitude
+            )
+            String.format("%.1f km", distanceInMeters / 1000)
+        } else "N/A"
+    }
+
     Card(
         modifier = modifier,
         elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
@@ -165,7 +189,7 @@ fun ProviderInfoCard(
             
             Text(
                 text = "Provider Details",
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                fontWeight = FontWeight.Bold,
                 fontSize = 20.sp,
                 color = Color.Black,
                 modifier = Modifier.align(Alignment.Start)
@@ -182,7 +206,7 @@ fun ProviderInfoCard(
                         .size(60.dp)
                         .background(
                             Color.Gray.copy(alpha = 0.2f),
-                            androidx.compose.foundation.shape.CircleShape
+                            CircleShape
                         ),
                     contentAlignment = Alignment.Center
                 ) {
@@ -222,8 +246,20 @@ fun ProviderInfoCard(
                             color = Color.Gray
                         )
                         Spacer(modifier = Modifier.width(12.dp))
+                        
+                        // Add distance calculation
+                        val distance = if (currentLocation != null) {
+                            val distanceInMeters = calculateDistance(
+                                currentLocation.latitude,
+                                currentLocation.longitude,
+                                provider.latitude,
+                                provider.longitude
+                            )
+                            String.format("%.1f km", distanceInMeters / 1000)
+                        } else "N/A"
+                        
                         Text(
-                            text = "• 0.8 km",
+                            text = "• $distance",
                             style = MaterialTheme.typography.bodySmall,
                             color = Color.Gray
                         )
@@ -262,8 +298,8 @@ fun ProviderInfoCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "340 jobs",
-                        style = MaterialTheme.typography.bodySmall,
+                        text = "${provider.completedJobs} jobs",
+                        style = MaterialTheme.typography.bodySmall, 
                         color = Color.Gray
                     )
                 }
@@ -279,7 +315,7 @@ fun ProviderInfoCard(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = "LKR 800/hr",
+                        text = "LKR ${provider.hourlyRate.toInt()}/hr",
                         style = MaterialTheme.typography.bodySmall,
                         color = Color.Gray
                     )
@@ -301,14 +337,19 @@ fun ProviderInfoCard(
                 )
                 
                 Button(
-                    onClick = {},
+                    onClick = {
+                        val intent = Intent(Intent.ACTION_DIAL).apply {
+                            data = Uri.parse("tel:${provider.phone}")
+                        }
+                        context.startActivity(intent)
+                    },
                     modifier = Modifier.size(52.dp),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.Transparent,
                         contentColor = Color.Gray
                     ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                    border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Icon(
@@ -327,7 +368,7 @@ fun ProviderInfoCard(
                         containerColor = Color.Transparent,
                         contentColor = Color.Gray
                     ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
+                    border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.3f)),
                     contentPadding = PaddingValues(0.dp)
                 ) {
                     Icon(
@@ -341,3 +382,5 @@ fun ProviderInfoCard(
         }
     }
 }
+
+

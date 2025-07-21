@@ -3,8 +3,10 @@ package com.sevalk.presentation.auth.registration
 import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -15,9 +17,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Divider
@@ -110,20 +114,21 @@ fun RegistrationScreen(
             
             Column(
                 modifier = Modifier
-                    .padding(horizontal = 24.dp),
+                    .padding(horizontal = 24.dp)
+                    .verticalScroll(rememberScrollState()),
             ) {
                 ProgressIndicator(
                     currentStep = uiState.currentStep,
                     totalSteps = 3
                 )
-                Spacer(modifier = Modifier.height(40.dp))
+                Spacer(modifier = Modifier.height(20.dp))
                 
                 // Show loading indicator when processing
-                if (uiState.isLoading) {
-                    androidx.compose.material3.CircularProgressIndicator(
-                        modifier = Modifier.align(Alignment.CenterHorizontally)
-                    )
-                }
+                // if (uiState.isLoading) {
+                //     androidx.compose.material3.CircularProgressIndicator(
+                //         modifier = Modifier.align(Alignment.CenterHorizontally)
+                //     )
+                // }
                 
                 when (uiState.currentStep) {
                     1 -> Step1GetStarted(
@@ -147,6 +152,21 @@ fun RegistrationScreen(
                         onNavigateToHome = onNavigateToHome
                     )
                 }
+                Spacer(modifier = Modifier.height(80.dp))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+        }
+        if (uiState.isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clickable(enabled = false) { } // Prevent clicks while loading
+                    .background(Color.Black.copy(alpha = 0.5f)), // Semi-transparent background
+                contentAlignment = Alignment.Center
+            ) {
+                androidx.compose.material3.CircularProgressIndicator(
+                    color = Color.White
+                )
             }
         }
     }
@@ -398,7 +418,7 @@ fun Step3AlmostThere(
     onNavigateToServiceSelection: () -> Unit = {},
     onNavigateToHome: () -> Unit = {}
 ) {
-    Column {
+    Column{
         Text(
             "How will you primarily use SevaLK?",
             fontWeight = FontWeight.Medium,

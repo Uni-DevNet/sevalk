@@ -14,6 +14,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import kotlinx.coroutines.delay
 import com.sevalk.R
 import com.sevalk.presentation.auth.AuthState
@@ -28,10 +29,15 @@ fun SplashScreen(
     modifier: Modifier = Modifier
 ) {
     val authState by remember { derivedStateOf { authViewModel.authState } }
+    val systemUiController = rememberSystemUiController()
 
     LaunchedEffect(Unit) {
+        systemUiController.setStatusBarColor(
+            color = Color.Transparent,        // Background color of the status bar
+            darkIcons = true          // false = light icons, true = dark icons
+        )
         // Show splash screen for at least 2 seconds
-        delay(2000)
+        delay(1000)
         authViewModel.checkInitialAuthState()
     }
 

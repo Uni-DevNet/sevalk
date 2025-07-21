@@ -34,15 +34,21 @@ import java.util.*
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import com.sevalk.presentation.components.common.PrimaryButton
 import com.sevalk.presentation.components.common.PrimaryButtonStyle
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
+import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingScreen(
     modifier: Modifier = Modifier,
-    onNavigateBack: () -> Unit = {}
+    providerId: String? = null,
+    onNavigateBack: () -> Unit = {},
+    onNavigateToConfirmation: (String, String, String) -> Unit = { _, _, _ -> },
+    viewModel: BookingViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableStateOf(0) }
-    var selectedService by remember { mutableStateOf("Cleaning") }
+    var selectedService by remember { mutableStateOf("") }
     var bookingTitle by remember { mutableStateOf("") }
     var description by remember { mutableStateOf("") }
     var selectedDate by remember { mutableStateOf("") }
@@ -51,6 +57,90 @@ fun BookingScreen(
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
+
+    val serviceProvider by viewModel.serviceProvider.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val bookingCreated by viewModel.bookingCreated.collectAsState()
+    
+    // Load provider details when component mounts
+    LaunchedEffect(providerId) {
+        providerId?.let { 
+            viewModel.loadServiceProvider(it)
+        }
+    }
+    
+    // Initialize selected service when provider is loaded
+    LaunchedEffect(serviceProvider) {
+        serviceProvider?.let { provider ->
+            if (selectedService.isEmpty() && provider.services.isNotEmpty()) {
+                selectedService = provider.services.first().name
+            }
+        }
+    }
+    
+    // Use provider data from database - moved before LaunchedEffect
+    val provider = serviceProvider
+    val displayName = provider?.businessName ?: ""
+    val displayRating = provider?.rating ?: 0.0f
+    val displayPrice = provider?.price ?: 0.0
+    val displayCompletedJobs = provider?.completedJobs ?: 0
+    val displayServices = provider?.services ?: emptyList()
+    val primaryService = displayServices.firstOrNull()
+    
+    // Handle booking creation success
+    LaunchedEffect(bookingCreated) {
+        bookingCreated?.let { bookingId ->
+            Timber.d("Booking created successfully with ID: $bookingId")
+            Timber.d("Navigating to confirmation with: bookingId=$bookingId, providerName=$displayName, serviceName=$selectedService")
+            try {
+                onNavigateToConfirmation(bookingId, displayName, selectedService)
+                viewModel.clearBookingCreated()
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to navigate to confirmation screen")
+            }
+        }
+    }
+    
+    // Show loading state
+    if (isLoading) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            CircularProgressIndicator(color = S_YELLOW)
+        }
+        return
+    }
+    
+    // Show error state
+    if (error != null || (serviceProvider == null && !isLoading)) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = error ?: "Provider not found",
+                    color = Color.Red,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(16.dp))
+                PrimaryButton(
+                    text = "Go Back",
+                    onClick = onNavigateBack,
+                    backgroundColor = S_YELLOW,
+                    foregroundColor = Color.White
+                )
+            }
+        }
+        return
+    }
+    
+    // Return early if provider is still null
+    if (provider == null) return
 
     BackHandler(enabled = selectedTab == 1) {
         selectedTab = 0
@@ -118,14 +208,11 @@ fun BookingScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box {
-                                
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = "Profile",
                                     modifier = Modifier.size(50.dp),
-                                   
                                 )
-
                                 Box(
                                     modifier = Modifier
                                         .size(12.dp)
@@ -138,7 +225,7 @@ fun BookingScreen(
                             
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "John Doe",
+                                    text = displayName,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = Color.Black
@@ -150,43 +237,23 @@ fun BookingScreen(
                                 ) {
                                     Text("⭐", fontSize = 12.sp)
                                     Text(
-                                        text = " 4.8 (127)",
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                    Text(
-                                        text = " • 0.8 km",
+                                        text = " ${displayRating} (${provider.totalReviews})",
                                         fontSize = 12.sp,
                                         color = Color.Gray
                                     )
                                 }
                                 
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "Plumbing",
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(
-                                                Color(0xFF2196F3).copy(alpha = 0.1f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                    Text(
-                                        text = "Cleaning",
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(
-                                                Color(0xFF2196F3).copy(alpha = 0.1f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
+                                Text(
+                                    text = primaryService?.name ?: "Service",
+                                    color = Color(0xFF2196F3),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .background(
+                                            Color(0xFF2196F3).copy(alpha = 0.1f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
                             }
                             
                             IconButton(onClick = { isFavorite = !isFavorite }) {
@@ -210,7 +277,7 @@ fun BookingScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = " 340 jobs",
+                                text = " ${displayCompletedJobs} jobs • LKR ${displayPrice}/hr",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -232,14 +299,11 @@ fun BookingScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-
                             Box {
-                               
                                 Icon(
                                     Icons.Default.Person,
                                     contentDescription = "Profile",
                                     modifier = Modifier.size(50.dp),
-                                   
                                 )
                                 Box(
                                     modifier = Modifier
@@ -253,7 +317,7 @@ fun BookingScreen(
                             
                             Column(modifier = Modifier.weight(1f)) {
                                 Text(
-                                    text = "John Doe",
+                                    text = displayName,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 16.sp,
                                     color = Color.Black
@@ -265,43 +329,23 @@ fun BookingScreen(
                                 ) {
                                     Text("⭐", fontSize = 12.sp)
                                     Text(
-                                        text = " 4.8 (127)",
-                                        fontSize = 12.sp,
-                                        color = Color.Gray
-                                    )
-                                    Text(
-                                        text = " • 0.8 km",
+                                        text = " ${displayRating} (${provider.totalReviews})",
                                         fontSize = 12.sp,
                                         color = Color.Gray
                                     )
                                 }
                                 
-                                Row(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                                ) {
-                                    Text(
-                                        text = "Plumbing",
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(
-                                                Color(0xFF2196F3).copy(alpha = 0.1f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                    Text(
-                                        text = "Cleaning",
-                                        color = Color(0xFF2196F3),
-                                        fontSize = 12.sp,
-                                        modifier = Modifier
-                                            .background(
-                                                Color(0xFF2196F3).copy(alpha = 0.1f),
-                                                RoundedCornerShape(12.dp)
-                                            )
-                                            .padding(horizontal = 8.dp, vertical = 2.dp)
-                                    )
-                                }
+                                Text(
+                                    text = primaryService?.name ?: "Service",
+                                    color = Color(0xFF2196F3),
+                                    fontSize = 12.sp,
+                                    modifier = Modifier
+                                        .background(
+                                            Color(0xFF2196F3).copy(alpha = 0.1f),
+                                            RoundedCornerShape(12.dp)
+                                        )
+                                        .padding(horizontal = 8.dp, vertical = 2.dp)
+                                )
                             }
                             
                             IconButton(onClick = { isFavorite = !isFavorite }) {
@@ -325,7 +369,7 @@ fun BookingScreen(
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
-                                text = " 340 jobs",
+                                text = " ${displayCompletedJobs} jobs • LKR ${displayPrice}/hr",
                                 fontSize = 12.sp,
                                 color = Color.Gray
                             )
@@ -428,26 +472,18 @@ fun BookingScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    ServiceCard(
-                        title = "Plumbing",
-                        subtitle = "Fixing and installing water systems",
-                        duration = "90 minutes",
-                        price = "LKR 400/hr",
-                        isSelected = selectedService == "Plumbing",
-                        onSelect = { selectedService = "Plumbing" }
-                    )
-                    
-                    Spacer(modifier = Modifier.height(12.dp))
+                    displayServices.forEach { service ->
+                        ServiceCard(
+                            title = service.name,
+                            subtitle = service.description ?: "Professional ${service.name.lowercase()} services", 
+                            duration = "Based on work",
+                            price = "LKR ${service.price ?: displayPrice}/hr",
+                            isSelected = selectedService == service.name,
+                            onSelect = { selectedService = service.name }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
 
-                    ServiceCard(
-                        title = "Cleaning",
-                        subtitle = "General home cleaning services",
-                        duration = "Full Day",
-                        price = "LKR 4000/day",
-                        isSelected = selectedService == "Cleaning",
-                        onSelect = { selectedService = "Cleaning" }
-                    )
-                    
                     Spacer(modifier = Modifier.weight(1f))
 
                     PrimaryButton(
@@ -630,7 +666,24 @@ fun BookingScreen(
 
                     PrimaryButton(
                         text = "Confirm Booking",
-                        onClick = { },
+                        onClick = { 
+                            Timber.d("Creating booking with: service=$selectedService, title=$bookingTitle, date=$selectedDate, time=$selectedTime")
+                            viewModel.createBooking(
+                                selectedService = selectedService,
+                                bookingTitle = bookingTitle,
+                                description = description,
+                                selectedDate = selectedDate,
+                                selectedTime = selectedTime,
+                                onSuccess = { bookingId ->
+                                    Timber.d("Booking creation success callback called with ID: $bookingId")
+                                    // Navigation will be handled by LaunchedEffect above
+                                },
+                                onError = { errorMessage ->
+                                    Timber.e("Booking creation failed: $errorMessage")
+                                    // TODO: Show error message to user (implement snackbar or dialog)
+                                }
+                            )
+                        },
                         backgroundColor = S_YELLOW,
                         foregroundColor = Color.White,
                         style = PrimaryButtonStyle.ICON_TEXT

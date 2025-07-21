@@ -1,112 +1,202 @@
 package com.sevalk.data.repositories
 
-import com.sevalk.presentation.components.map.ServiceProvider
+import com.google.firebase.firestore.FirebaseFirestore
+import com.sevalk.data.models.ServiceProvider
+import com.sevalk.data.models.Service
+import com.sevalk.presentation.components.map.ServiceProvider as MapServiceProvider
 import com.sevalk.presentation.components.map.ServiceType
+import com.sevalk.presentation.components.map.calculateDistance
+import com.sevalk.utils.Constants
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+import timber.log.Timber
 
-// Mock data repository for service providers
-class ServiceProviderRepository {
-
-    companion object {
-        fun getServiceProviders(): List<ServiceProvider> {
-            return listOf(
-                ServiceProvider(
-                    id = "1",
-                    name = "Matara Central College",
-                    type = ServiceType.PLUMBING,
-                    latitude = 5.9485,
-                    longitude = 80.5353,
-                    rating = 4.5f,
-                    description = "Professional plumbing services",
-                    phone = "+94 77 123 4567",
-                    address = "Main Street, Matara"
-                ),
-                ServiceProvider(
-                    id = "2",
-                    name = "Department of Immigration",
-                    type = ServiceType.ELECTRICAL,
-                    latitude = 5.9475,
-                    longitude = 80.5343,
-                    rating = 4.2f,
-                    description = "Electrical repair and installation",
-                    phone = "+94 77 234 5678",
-                    address = "Government Building, Matara"
-                ),
-                ServiceProvider(
-                    id = "3",
-                    name = "Sri Darmawansa Mawatha",
-                    type = ServiceType.CLEANING,
-                    latitude = 5.9495,
-                    longitude = 80.5363,
-                    rating = 4.8f,
-                    description = "House and office cleaning services",
-                    phone = "+94 77 345 6789",
-                    address = "Sri Darmawansa Mawatha, Matara"
-                ),
-                ServiceProvider(
-                    id = "4",
-                    name = "Dr. S.A. Wickremasinghe Mawatha",
-                    type = ServiceType.PLUMBING,
-                    latitude = 5.9465,
-                    longitude = 80.5333,
-                    rating = 4.0f,
-                    description = "Expert plumbing solutions",
-                    phone = "+94 77 456 7890",
-                    address = "Dr. S.A. Wickremasinghe Mawatha, Matara"
-                ),
-                ServiceProvider(
-                    id = "5",
-                    name = "Samanmal - Matara",
-                    type = ServiceType.ELECTRICAL,
-                    latitude = 5.9455,
-                    longitude = 80.5323,
-                    rating = 4.3f,
-                    description = "Residential electrical services",
-                    phone = "+94 77 567 8901",
-                    address = "Samanmal Road, Matara"
-                ),
-                ServiceProvider(
-                    id = "6",
-                    name = "Cargills Food City - Matara 1",
-                    type = ServiceType.CLEANING,
-                    latitude = 5.9445,
-                    longitude = 80.5313,
-                    rating = 4.6f,
-                    description = "Commercial cleaning services",
-                    phone = "+94 77 678 9012",
-                    address = "Near Cargills, Matara"
-                ),
-                ServiceProvider(
-                    id = "7",
-                    name = "Weligama Football Stadium",
-                    type = ServiceType.ALL,
-                    latitude = 5.9435,
-                    longitude = 80.5303,
-                    rating = 4.1f,
-                    description = "Multi-service provider",
-                    phone = "+94 77 789 0123",
-                    address = "Stadium Road, Weligama"
-                )
-            )
+class ServiceProviderRepository @Inject constructor(
+    private val firestore: FirebaseFirestore
+) {
+    private fun getServiceType(service: Service?): ServiceType {
+        return when (service?.name?.uppercase()) {
+            "PLUMBING" -> ServiceType.PLUMBING
+            "ELECTRICAL" -> ServiceType.ELECTRICAL
+            "CLEANING", "CLEANING (RESIDENTIAL)" -> ServiceType.CLEANING
+            else -> ServiceType.ALL
         }
+    }
 
-        fun getServiceProvidersByType(type: ServiceType): List<ServiceProvider> {
-            return if (type == ServiceType.ALL) {
-                getServiceProviders()
+    suspend fun getServiceProviders(): List<MapServiceProvider> {
+        return try {
+            val snapshot = firestore.collection("service_providers")
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { document ->
+                try {
+                    val data = document.data ?: return@mapNotNull null
+
+                    val serviceLocation = data["serviceLocation"] as? Map<String, Any>
+                    val latitude = serviceLocation?.get("latitude") as? Double ?: 0.0
+                    val longitude = serviceLocation?.get("longitude") as? Double ?: 0.0
+
+                    val services = data["services"] as? List<Map<String, Any>> ?: emptyList()
+                    val firstService = services.firstOrNull()
+
+                    val serviceName = firstService?.get("name") as? String
+                    
+                    Timber.d("Provider ${document.id} service: $serviceName")
+
+                    val price = firstService?.get("price") as? String ?: "0"
+                    
+                    MapServiceProvider(
+                        id = document.id,
+                        name = data["businessName"] as? String ?: "Unknown",
+                        type = getServiceTypeFromName(serviceName),
+                        latitude = latitude,
+                        longitude = longitude,
+                        rating = (data["rating"] as? Double)?.toFloat() ?: 0f,
+                        description = data["description"] as? String ?: "",
+                        hourlyRate = price.toDoubleOrNull() ?: 0.0,
+                        phone = data["phone"] as? String ?: "",
+                        completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0
+                    )
+                } catch (e: Exception) {
+                    Timber.e(e, "Error mapping provider document ${document.id}")
+                    null
+                }
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error getting providers")
+            emptyList()
+        }
+    }
+
+    private fun getServiceTypeFromName(serviceName: String?): ServiceType {
+        return when (serviceName?.uppercase()) {
+            "PLUMBING" -> ServiceType.PLUMBING
+            "ELECTRICAL", "ELECTRICAL REPAIR" -> ServiceType.ELECTRICAL
+            "CLEANING", "CLEANING (RESIDENTIAL)" -> ServiceType.CLEANING
+            else -> {
+                Timber.d("Unknown service type: $serviceName")
+                ServiceType.ALL
+            }
+        }
+    }
+
+    suspend fun getServiceProviderById(providerId: String): ServiceProvider? {
+        return try {
+            Timber.d("Fetching provider with ID: $providerId")
+            val document = firestore.collection("service_providers")
+                .document(providerId)
+                .get()
+                .await()
+            
+            if (document.exists()) {
+                val data = document.data
+                if (data != null) {
+                    val provider = ServiceProvider.fromMap(data)
+                    Timber.d("Provider found: ${provider?.businessName}")
+                    provider
+                } else {
+                    Timber.w("Document exists but data is null for provider $providerId")
+                    null
+                }
             } else {
-                getServiceProviders().filter { it.type == type }
+                Timber.w("Document does not exist for provider $providerId")
+                null
             }
+        } catch (e: Exception) {
+            Timber.e(e, "Error fetching provider $providerId")
+            null
         }
+    }
 
-        fun searchServiceProviders(query: String): List<ServiceProvider> {
-            return getServiceProviders().filter { provider ->
-                provider.name.contains(query, ignoreCase = true) ||
-                provider.description.contains(query, ignoreCase = true) ||
-                provider.type.displayName.contains(query, ignoreCase = true)
+    suspend fun searchServiceProviders(query: String): List<MapServiceProvider> {
+        return try {
+            val snapshot = firestore.collection("service_providers")
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { document ->
+                try {
+                    val data = document.data ?: return@mapNotNull null
+
+                    val businessName = data["businessName"] as? String ?: return@mapNotNull null
+                    val description = data["description"] as? String ?: ""
+                    val services = data["services"] as? List<Map<String, Any>> ?: emptyList()
+
+                    val matchesQuery = query.isEmpty() || 
+                        businessName.contains(query, ignoreCase = true) ||
+                        description.contains(query, ignoreCase = true) ||
+                        services.any { service -> 
+                            (service["name"] as? String)?.contains(query, ignoreCase = true) == true
+                        }
+                    
+                    if (!matchesQuery) return@mapNotNull null
+
+                    val serviceLocation = data["serviceLocation"] as? Map<String, Any>
+                    val latitude = serviceLocation?.get("latitude") as? Double ?: 0.0
+                    val longitude = serviceLocation?.get("longitude") as? Double ?: 0.0
+
+                    val firstService = services.firstOrNull()
+                    val serviceName = firstService?.get("name") as? String
+
+                    val price = firstService?.get("price") as? Long ?: 0L 
+                    
+                    MapServiceProvider(
+                        id = document.id,
+                        name = businessName,
+                        type = getServiceTypeFromName(serviceName),
+                        latitude = latitude,
+                        longitude = longitude,
+                        rating = (data["rating"] as? Double)?.toFloat() ?: 0f,
+                        description = description,
+                        phone = data["phone"] as? String ?: "",
+                        hourlyRate = price.toDouble(),
+                        completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0
+                    )
+                } catch (e: Exception) {
+                    Timber.e(e, "Error mapping provider document ${document.id}")
+                    null
+                }
             }
+        } catch (e: Exception) {
+            Timber.e(e, "Error searching providers")
+            emptyList()
         }
+    }
 
-        fun getServiceProviderById(id: String): ServiceProvider? {
-            return getServiceProviders().find { it.id == id }
+    private fun isProviderInRange(
+        providerLat: Double,
+        providerLng: Double,
+        userLat: Double,
+        userLng: Double,
+        radiusKm: Double
+    ): Boolean {
+        val distance = calculateDistance(
+            userLat, userLng,
+            providerLat, providerLng
+        )
+        return distance <= radiusKm * 1000
+    }
+
+    suspend fun getNearbyServiceProviders(
+        userLat: Double,
+        userLng: Double,
+        radiusKm: Double = Constants.NEARBY_PROVIDER_RADIUS_KM
+    ): List<MapServiceProvider> {
+        return try {
+            val allProviders = getServiceProviders()
+            allProviders.filter { provider ->
+                isProviderInRange(
+                    provider.latitude,
+                    provider.longitude,
+                    userLat,
+                    userLng,
+                    radiusKm
+                )
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Error getting nearby providers")
+            emptyList()
         }
     }
 }

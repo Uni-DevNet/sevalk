@@ -30,6 +30,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.unit.dp
 import com.sevalk.R
+import com.sevalk.utils.Constants
 
 data class ServiceProvider(
     val id: String,
@@ -39,8 +40,10 @@ data class ServiceProvider(
     val longitude: Double,
     val rating: Float = 0f,
     val description: String = "",
+    val hourlyRate: Double = 0.0,
     val phone: String = "",
-    val address: String = ""
+    val address: String = "",
+    val completedJobs: Int = 0
 )
 
 enum class ServiceType(val displayName: String, val icon: ImageVector, val color: Color) {
@@ -56,6 +59,7 @@ fun MapService(
     selectedServiceType: ServiceType = ServiceType.ALL,
     showCurrentLocation: Boolean = true,
     onMarkerClick: ((ServiceProvider) -> Unit)? = null,
+    onLocationChanged: ((LatLng) -> Unit)? = null,
     modifier: Modifier = Modifier,
     initialZoom: Float = 14f
 ) {
@@ -76,6 +80,23 @@ fun MapService(
     LaunchedEffect(currentLocation) {
         currentLocation?.let { location ->
             cameraPositionState.position = CameraPosition.fromLatLngZoom(location, initialZoom)
+            onLocationChanged?.invoke(location)
+        }
+    }
+
+    val filteredProviders = remember(serviceProviders, currentLocation, selectedServiceType) {
+        serviceProviders.filter { provider ->
+            val isTypeMatch = selectedServiceType == ServiceType.ALL || provider.type == selectedServiceType
+            val isInRange = currentLocation?.let { current ->
+                val distance = calculateDistance(
+                    current.latitude,
+                    current.longitude,
+                    provider.latitude,
+                    provider.longitude
+                )
+                distance <= Constants.NEARBY_PROVIDER_RADIUS_KM * 1000
+            } ?: true
+            isTypeMatch && isInRange
         }
     }
 
@@ -83,31 +104,42 @@ fun MapService(
         GoogleMap(
             modifier = Modifier.fillMaxSize(),
             cameraPositionState = cameraPositionState,
-            uiSettings = MapUiSettings(myLocationButtonEnabled = false),
+            uiSettings = MapUiSettings(
+                myLocationButtonEnabled = false,
+                zoomControlsEnabled = true
+            ),
             properties = MapProperties(
                 isMyLocationEnabled = showCurrentLocation && currentLocation != null
             )
         ) {
-            serviceProviders.forEach { provider ->
-                if (selectedServiceType == ServiceType.ALL || provider.type == selectedServiceType) {
-                    val iconResId = when (provider.type) {
-                        ServiceType.PLUMBING -> R.drawable.map4_24
-                        ServiceType.ELECTRICAL -> R.drawable.map3_24
-                        ServiceType.CLEANING -> R.drawable.map1_24
-                        ServiceType.ALL -> R.drawable.map2_24
-                    }
-
-                    Marker(
-                        state = MarkerState(LatLng(provider.latitude, provider.longitude)),
-                        title = provider.name,
-                        snippet = provider.type.displayName,
-                        icon = BitmapDescriptorFactory.fromResource(iconResId),
-                        onClick = {
-                            onMarkerClick?.invoke(provider)
-                            false
+            filteredProviders.forEach { provider ->
+                Marker(
+                    state = MarkerState(LatLng(provider.latitude, provider.longitude)),
+                    title = provider.name,
+                    snippet = "${provider.type.displayName} (${
+                        currentLocation?.let { current ->
+                            val distance = calculateDistance(
+                                current.latitude,
+                                current.longitude,
+                                provider.latitude,
+                                provider.longitude
+                            )
+                            String.format("%.1f km", distance / 1000)
+                        } ?: "Unknown distance"
+                    })",
+                    icon = BitmapDescriptorFactory.fromResource(
+                        when (provider.type) {
+                            ServiceType.PLUMBING -> R.drawable.map4_24
+                            ServiceType.ELECTRICAL -> R.drawable.map3_24
+                            ServiceType.CLEANING -> R.drawable.map1_24
+                            ServiceType.ALL -> R.drawable.map2_24
                         }
-                    )
-                }
+                    ),
+                    onClick = {
+                        onMarkerClick?.invoke(provider)
+                        false
+                    }
+                )
             }
         }
 

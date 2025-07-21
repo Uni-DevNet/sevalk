@@ -12,10 +12,9 @@ import com.sevalk.data.models.Job
 import com.sevalk.presentation.auth.AuthState
 import com.sevalk.presentation.auth.AuthViewModel
 import com.sevalk.presentation.chat.ChatScreen
-import com.sevalk.presentation.customer.booking.BookingScreen
 import com.sevalk.presentation.customer.booking.MyBookingsScreen
 import com.sevalk.presentation.customer.home.HomeScreen
-import com.sevalk.presentation.customer.home.ServiceProviderMapScreen
+import com.sevalk.presentation.customer.search.ServiceProviderMapScreen
 import com.sevalk.presentation.customer.profile.CustomerProfileScreen
 import com.sevalk.presentation.provider.home.ProviderHomeScreen
 import com.sevalk.presentation.provider.jobs.CreateServiceBillScreen
@@ -157,7 +156,7 @@ fun MainNavigation(
             if (isProviderMode) {
                 when (providerSelectedTab) {
                     ProviderNavigationTab.DASHBOARD -> {
-                        ProviderHomeScreen(navController = navController)
+                        ProviderHomeScreen(navController = navController, onSwitchToCustomer = switchToCustomerMode)
                     }
                     ProviderNavigationTab.JOBS -> {
                         JobsScreen(

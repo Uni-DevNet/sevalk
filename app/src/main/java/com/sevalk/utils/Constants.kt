@@ -39,6 +39,11 @@ object Constants {
     const val BOOKING_STATUS_IN_PROGRESS = "in_progress"
     const val BOOKING_STATUS_COMPLETED = "completed"
     const val BOOKING_STATUS_CANCELLED = "cancelled"
+    
+    // Booking Fields
+    const val FIELD_PROVIDER_NAME = "providerName"
+    const val FIELD_CUSTOMER_NAME = "customerName"
+    const val FIELD_SERVICE_NAME = "serviceName"
 
     // Message Types
     const val MESSAGE_TYPE_TEXT = "text"
@@ -162,8 +167,9 @@ object Constants {
     }
 
     // Location & Search
-    const val DEFAULT_SEARCH_RADIUS_KM = 10.0
+    const val DEFAULT_SEARCH_RADIUS_KM = 15.0
     const val MAX_SEARCH_RADIUS_KM = 50.0
+    const val NEARBY_PROVIDER_RADIUS_KM = 15.0
     const val LOCATION_UPDATE_INTERVAL = 10000L // 10 seconds
     const val LOCATION_FASTEST_INTERVAL = 5000L // 5 seconds
 
