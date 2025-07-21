@@ -16,6 +16,8 @@ interface BookingRepository {
     suspend fun createBooking(booking: Booking): Result<String>
     suspend fun getBookingById(bookingId: String): Result<Booking?>
     suspend fun updateBookingStatus(bookingId: String, status: BookingStatus): Result<Unit>
+    suspend fun getBookingsByCustomerId(customerId: String): Result<List<Booking>>
+    suspend fun getProviderById(providerId: String): Result<Map<String, Any>?>
 }
 
 class BookingRepositoryImpl @Inject constructor(
@@ -98,6 +100,45 @@ class BookingRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun getBookingsByCustomerId(customerId: String): Result<List<Booking>> {
+        return try {
+            val querySnapshot = firestore.collection(Constants.COLLECTION_BOOKINGS)
+                .whereEqualTo("customerId", customerId)
+                .get()
+                .await()
+            
+            val bookings = querySnapshot.documents.mapNotNull { document ->
+                document.data?.let { data ->
+                    mapToBooking(data)
+                }
+            }.sortedByDescending { it.createdAt } // Sort on client side by creation date
+            
+            Timber.d("Retrieved ${bookings.size} bookings for customer: $customerId")
+            Result.success(bookings)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get bookings for customer: $customerId")
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun getProviderById(providerId: String): Result<Map<String, Any>?> {
+        return try {
+            val document = firestore.collection(Constants.COLLECTION_USERS)
+                .document(providerId)
+                .get()
+                .await()
+            
+            if (document.exists()) {
+                Result.success(document.data)
+            } else {
+                Result.success(null)
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get provider details")
+            Result.failure(e)
+        }
+    }
+    
     private fun bookingToMap(booking: Booking): Map<String, Any> {
         return mapOf(
             "id" to booking.id,
@@ -141,20 +182,89 @@ class BookingRepositoryImpl @Inject constructor(
     }
     
     private fun mapToBooking(data: Map<String, Any>): Booking {
-        // Implementation for converting map back to Booking object
-        // This is a simplified version - you might want to add more robust parsing
-        return Booking(
-            id = data["id"] as? String ?: "",
-            customerId = data["customerId"] as? String ?: "",
-            providerId = data["providerId"] as? String ?: "",
-            serviceId = data["serviceId"] as? String ?: "",
-            serviceName = data["serviceName"] as? String ?: "",
-            description = data["description"] as? String ?: "",
-            scheduledDate = data["scheduledDate"] as? Long ?: 0L,
-            scheduledTime = data["scheduledTime"] as? String ?: "",
-            status = BookingStatus.valueOf(data["status"] as? String ?: "PENDING"),
-            createdAt = data["createdAt"] as? Long ?: 0L,
-            updatedAt = data["updatedAt"] as? Long ?: 0L
-        )
+        try {
+            // Parse service location
+            val locationData = data["serviceLocation"] as? Map<String, Any> ?: emptyMap()
+            val serviceLocation = com.sevalk.data.models.ServiceLocation(
+                address = locationData["address"] as? String ?: "",
+                city = locationData["city"] as? String ?: "",
+                province = locationData["province"] as? String ?: "",
+                country = locationData["country"] as? String ?: "Sri Lanka",
+                latitude = (locationData["latitude"] as? Number)?.toDouble() ?: 0.0,
+                longitude = (locationData["longitude"] as? Number)?.toDouble() ?: 0.0
+            )
+            
+            // Parse pricing
+            val pricingData = data["pricing"] as? Map<String, Any> ?: emptyMap()
+            val pricing = BookingPricing(
+                basePrice = (pricingData["basePrice"] as? Number)?.toDouble() ?: 0.0,
+                totalAmount = (pricingData["totalAmount"] as? Number)?.toDouble() ?: 0.0,
+                paymentStatus = try {
+                    com.sevalk.data.models.PaymentStatus.valueOf(
+                        pricingData["paymentStatus"] as? String ?: "PENDING"
+                    )
+                } catch (e: Exception) {
+                    com.sevalk.data.models.PaymentStatus.PENDING
+                }
+            )
+            
+            // Parse timeline
+            val timelineData = data["timeline"] as? List<Map<String, Any>> ?: emptyList()
+            val timeline = timelineData.map { eventData ->
+                BookingTimelineEvent(
+                    id = eventData["id"] as? String ?: UUID.randomUUID().toString(),
+                    event = try {
+                        BookingEvent.valueOf(eventData["event"] as? String ?: "CREATED")
+                    } catch (e: Exception) {
+                        BookingEvent.CREATED
+                    },
+                    timestamp = (eventData["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                    description = eventData["description"] as? String ?: "",
+                    performedBy = eventData["performedBy"] as? String ?: ""
+                )
+            }
+            
+            return Booking(
+                id = data["id"] as? String ?: "",
+                customerId = data["customerId"] as? String ?: "",
+                providerId = data["providerId"] as? String ?: "",
+                serviceId = data["serviceId"] as? String ?: "",
+                serviceName = data["serviceName"] as? String ?: "",
+                description = data["description"] as? String ?: "",
+                serviceLocation = serviceLocation,
+                scheduledDate = (data["scheduledDate"] as? Number)?.toLong() ?: 0L,
+                scheduledTime = data["scheduledTime"] as? String ?: "",
+                estimatedDuration = ((data["estimatedDuration"] as? Number)?.toInt() ?: 60).toString(),
+                pricing = pricing,
+                status = try {
+                    BookingStatus.valueOf(data["status"] as? String ?: "PENDING")
+                } catch (e: Exception) {
+                    BookingStatus.PENDING
+                },
+                priority = try {
+                    com.sevalk.data.models.BookingPriority.valueOf(
+                        data["priority"] as? String ?: "NORMAL"
+                    )
+                } catch (e: Exception) {
+                    com.sevalk.data.models.BookingPriority.NORMAL
+                },
+                specialInstructions = data["specialInstructions"] as? String ?: "",
+                attachments = (data["attachments"] as? List<String>) ?: emptyList(),
+                createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
+                updatedAt = (data["updatedAt"] as? Number)?.toLong() ?: 0L,
+                timeline = timeline
+            )
+        } catch (e: Exception) {
+            Timber.e(e, "Error mapping booking data: $data")
+            // Return a default booking with available data
+            return Booking(
+                id = data["id"] as? String ?: "",
+                customerId = data["customerId"] as? String ?: "",
+                serviceName = data["serviceName"] as? String ?: "Unknown Service",
+                status = BookingStatus.PENDING,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+        }
     }
 }

@@ -10,97 +10,47 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Chat
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import com.sevalk.R
-import com.sevalk.ui.theme.SevaLKTheme
-
-data class BookingStatus(
-    val name: String,
-    val color: Color,
-    val backgroundColor: Color
-)
-
-data class MyBooking(
-    val id: String,
-    val serviceName: String,
-    val providerName: String,
-    val date: String,
-    val time: String,
-    val status: BookingStatus
-)
+import com.sevalk.data.models.Booking
+import com.sevalk.data.models.BookingStatus
+import java.text.SimpleDateFormat
+import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MyBookingsScreen(
     navController: NavController,
+    viewModel: MyBookingsViewModel = hiltViewModel(),
     modifier: Modifier = Modifier
 ) {
-    var selectedFilterIndex by remember { mutableStateOf(0) }
+    val bookings by viewModel.bookings.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
+    val error by viewModel.error.collectAsState()
+    val selectedFilter by viewModel.selectedFilter.collectAsState()
     
     val filters = listOf("All", "Pending", "Accepted", "Unpaid", "Completed")
+    val filteredBookings = viewModel.getFilteredBookings()
     
-    val bookingStatuses = mapOf(
-        "confirmed" to BookingStatus("Confirmed", Color(0xFF10B981), Color(0xFFD1FAE5)),
-        "pending" to BookingStatus("Pending", Color(0xFFF59E0B), Color(0xFFFEF3C7)),
-        "rejected" to BookingStatus("Rejected", Color(0xFFEF4444), Color(0xFFFEE2E2))
-    )
-    
-    val allBookings = listOf(
-        MyBooking(
-            "1",
-            "Plumbing repair",
-            "Mike's Plumbing",
-            "Today",
-            "2:00 PM",
-            bookingStatuses["confirmed"]!!
-        ),
-        MyBooking(
-            "2", 
-            "Math Tutoring",
-            "Lisa Chen",
-            "Tomorrow",
-            "4:00 PM",
-            bookingStatuses["pending"]!!
-        ),
-        MyBooking(
-            "3",
-            "Plumbing repair", 
-            "Mike's Plumbing",
-            "Today",
-            "2:00 PM",
-            bookingStatuses["confirmed"]!!
-        ),
-        MyBooking(
-            "4",
-            "Plumbing repair",
-            "Elly's Plumbing", 
-            "Today",
-            "2:00 PM",
-            bookingStatuses["rejected"]!!
-        )
-    )
-    
-    val filteredBookings = when (selectedFilterIndex) {
-        1 -> allBookings.filter { it.status.name == "Pending" }
-        2 -> allBookings.filter { it.status.name == "Confirmed" }
-        3 -> allBookings // Unpaid filter - you can add logic here
-        4 -> allBookings // Completed filter - you can add logic here  
-        else -> allBookings
+    // Show error snackbar
+    error?.let { errorMessage ->
+        LaunchedEffect(errorMessage) {
+            // You can show a snackbar here if needed
+            viewModel.clearError()
+        }
     }
 
     Column(
@@ -109,12 +59,26 @@ fun MyBookingsScreen(
             .background(Color.White)
             .padding(horizontal = 16.dp)
     ) {
-        Text(
-            text = "My Bookings",
-            fontSize = 24.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = Color.Black
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "My Bookings",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.Black
+            )
+            
+            IconButton(onClick = { viewModel.refreshBookings() }) {
+                Icon(
+                    imageVector = Icons.Default.Refresh,
+                    contentDescription = "Refresh",
+                    tint = if (isLoading) Color.Gray else Color.Black
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(8.dp))
         
@@ -123,32 +87,83 @@ fun MyBookingsScreen(
             modifier = Modifier.padding(vertical = 8.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            items(filters.size) { index ->
+            items(filters) { filter ->
                 FilterChip(
-                    text = filters[index],
-                    isSelected = selectedFilterIndex == index,
-                    onClick = { selectedFilterIndex = index }
+                    text = filter,
+                    isSelected = selectedFilter == filter,
+                    onClick = { viewModel.setFilter(filter) }
                 )
             }
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // Bookings List
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(filteredBookings) { booking ->
-                BookingCard(
-                    booking = booking,
-                    onBookingClick = { bookingId ->
-                        navController.navigate("booking_details/$bookingId")
-                    }
+        // Show loading indicator
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = Color(0xFFFFC107))
+            }
+        }
+        
+        // Show error message
+        error?.let { errorMessage ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFEE2E2))
+            ) {
+                Text(
+                    text = errorMessage,
+                    color = Color.Red,
+                    modifier = Modifier.padding(16.dp),
+                    textAlign = TextAlign.Center
                 )
             }
-            
-            item {
-                Spacer(modifier = Modifier.height(16.dp))
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        // Bookings List
+        if (filteredBookings.isEmpty() && !isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No bookings found",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Gray
+                    )
+                    Text(
+                        text = if (selectedFilter == "All") "You haven't made any bookings yet" 
+                               else "No ${selectedFilter.lowercase()} bookings",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+                }
+            }
+        } else {
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(filteredBookings) { booking ->
+                    BookingCard(
+                        booking = booking,
+                        onBookingClick = { bookingId ->
+                            navController.navigate("booking_details/$bookingId")
+                        }
+                    )
+                }
+                
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
         }
     }
@@ -178,10 +193,18 @@ fun FilterChip(
 
 @Composable
 fun BookingCard(
-    booking: MyBooking,
+    booking: Booking,
     onBookingClick: (String) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
+    val statusInfo = getBookingStatusInfo(booking.status)
+    val dateFormatter = SimpleDateFormat("MMM dd, yyyy", Locale.getDefault())
+    val formattedDate = try {
+        dateFormatter.format(Date(booking.scheduledDate))
+    } catch (e: Exception) {
+        "Date not available"
+    }
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -196,23 +219,6 @@ fun BookingCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-//            // Service Icon
-//            Box(
-//                modifier = Modifier
-//                    .size(40.dp)
-//                    .background(Color(0xFFF3F4F6), CircleShape),
-//                contentAlignment = Alignment.Center
-//            ) {
-//                Icon(
-//                    Icons.Default.Build,
-//                    contentDescription = null,
-//                    tint = Color.Gray,
-//                    modifier = Modifier.size(20.dp)
-//                )
-//            }
-            
-//            Spacer(modifier = Modifier.width(12.dp))
-            
             // Booking Details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -222,7 +228,7 @@ fun BookingCard(
                     color = Color.Black
                 )
                 Text(
-                    booking.providerName,
+                    "Booking ID: ${booking.id.take(8)}",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )
@@ -236,7 +242,7 @@ fun BookingCard(
                         modifier = Modifier.size(12.dp)
                     )
                     Text(
-                        " ${booking.date}, ${booking.time}",
+                        " $formattedDate, ${booking.scheduledTime}",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
@@ -249,56 +255,48 @@ fun BookingCard(
                 // Status Badge
                 Surface(
                     shape = RoundedCornerShape(12.dp),
-                    color = booking.status.backgroundColor
+                    color = statusInfo.backgroundColor
                 ) {
                     Text(
-                        booking.status.name,
+                        statusInfo.name,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Medium,
-                        color = booking.status.color
+                        color = statusInfo.color
                     )
                 }
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Action Buttons
-                Row {
-                    IconButton(
-                        onClick = { /* Handle call */ },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Call,
-                            contentDescription = "Call",
-                            tint = Color.Gray,
-                            modifier = Modifier.size(16.dp)
-                        )
-                    }
-
-                    IconButton(
-                        onClick = { /* Handle message */ },
-                        modifier = Modifier.size(32.dp)
-                    ) {
-                        Surface(
-                            shape = CircleShape,
-                            color = Color(0xFFFFC107),
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.message_circle),
-                                contentDescription = "Message",
-                                tint = Color.Black,
-                                modifier = Modifier
-                                    .padding(4.dp)
-                                    .size(16.dp)
-                            )
-                        }
-                    }
-                }
+                // Price
+                Text(
+                    "LKR ${booking.pricing.totalAmount.toInt()}",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Black
+                )
             }
         }
     }
 }
+
+private fun getBookingStatusInfo(status: BookingStatus): BookingStatusInfo {
+    return when (status) {
+        BookingStatus.PENDING -> BookingStatusInfo("Pending", Color(0xFFF59E0B), Color(0xFFFEF3C7))
+        BookingStatus.ACCEPTED -> BookingStatusInfo("Accepted", Color(0xFF10B981), Color(0xFFD1FAE5))
+        BookingStatus.CONFIRMED -> BookingStatusInfo("Confirmed", Color(0xFF10B981), Color(0xFFD1FAE5))
+        BookingStatus.IN_PROGRESS -> BookingStatusInfo("In Progress", Color(0xFF3B82F6), Color(0xFFDBEAFE))
+        BookingStatus.COMPLETED -> BookingStatusInfo("Completed", Color(0xFF10B981), Color(0xFFD1FAE5))
+        BookingStatus.CANCELLED -> BookingStatusInfo("Cancelled", Color(0xFFEF4444), Color(0xFFFEE2E2))
+        BookingStatus.REJECTED -> BookingStatusInfo("Rejected", Color(0xFFEF4444), Color(0xFFFEE2E2))
+        else -> BookingStatusInfo("Unknown", Color.Gray, Color(0xFFF3F4F6))
+    }
+}
+
+data class BookingStatusInfo(
+    val name: String,
+    val color: Color,
+    val backgroundColor: Color
+)
 
 
