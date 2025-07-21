@@ -192,7 +192,7 @@ fun MainNavigation(
                             },
                             onPrivacySecurityClick = {},
                             onHelpSupportClick = {},
-                            onSwitchToCustomerClick = {}
+                            onSwitchToCustomerClick = switchToCustomerMode
                         )
                     }
                 }
