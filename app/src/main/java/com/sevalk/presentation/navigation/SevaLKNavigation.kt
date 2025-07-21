@@ -195,18 +195,6 @@ fun SevaLKNavigation(
         
         composable(Screen.ProviderProfile.route) {
             ProviderProfileScreen(
-                initialProviderProfile = ProviderProfile(
-                    name = "John Plumbing",
-                    memberSince = "March 2023",
-                    completedJobs = 43,
-                    totalJobs = 327,
-                    location = "Weligama, Southern Province",
-                    totalEarnings = "LKR 45,600",
-                    email = "john.obus@email.com",
-                    phoneNumber = "+44 77 123 4567",
-                    isAvailable = true,
-                    responseTime = "1 hour"
-                ),
                 onLogoutClick = {},
                 onServicesClick = {},
                 onPaymentMethodsClick = {},

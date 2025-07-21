@@ -24,11 +24,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.sevalk.R
 import com.sevalk.presentation.customer.profile.EditProfilePopup
 import com.sevalk.presentation.customer.profile.UserProfile
-import androidx.navigation.NavController
-import androidx.navigation.compose.rememberNavController
+import android.util.Log
 
 data class ProviderProfile(
     val name: String,
@@ -46,8 +48,8 @@ data class ProviderProfile(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProviderProfileScreen(
-    initialProviderProfile: ProviderProfile,
     navController: NavController,
+    viewModel: ProviderProfileViewModel = hiltViewModel(),
     onLogoutClick: () -> Unit,
     onServicesClick: () -> Unit,
     onPaymentMethodsClick: () -> Unit,
@@ -55,305 +57,318 @@ fun ProviderProfileScreen(
     onHelpSupportClick: () -> Unit,
     onSwitchToCustomerClick: () -> Unit
 ) {
-    var providerProfile by remember { mutableStateOf(initialProviderProfile) }
+    val providerProfile by viewModel.providerProfile.collectAsState()
     var showEditProfilePopup by remember { mutableStateOf(false) }
-    val YellowHighlight = Color(0xFFFDD835)
-    val CardBackground = Color(0xFFF8F9FA)
 
-    Scaffold(
-    ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.White)
-        ) {
-            Column(
+    // Add debug logging
+    LaunchedEffect(Unit) {
+        Log.d("ProviderProfileScreen", "Screen launched")
+    }
+
+    providerProfile?.let { profile ->
+        Log.d("ProviderProfileScreen", "Rendering profile for: ${profile.name}")
+
+        val YellowHighlight = Color(0xFFFDD835)
+        val CardBackground = Color(0xFFF8F9FA)
+
+        Scaffold(
+        ) { paddingValues ->
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
+                    .background(Color.White)
             ) {
-                Button(
-                    onClick = onSwitchToCustomerClick,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = YellowHighlight,
-                        contentColor = Color.Black
-                    ),
-                    shape = RoundedCornerShape(20.dp),
-                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                    modifier = Modifier.padding(end = 8.dp)
-                        .align(Alignment.End)
-                ) {
-                    Text("Switch to Customer", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
-                }
-                // Profile Header Section
-                Spacer(modifier = Modifier.height(16.dp))
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
                 ) {
-                    // Profile Picture
-                    Box(
-                        contentAlignment = Alignment.BottomEnd,
-                        modifier = Modifier.size(80.dp)
+                    Button(
+                        onClick = onSwitchToCustomerClick,
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = YellowHighlight,
+                            contentColor = Color.Black
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
+                        modifier = Modifier.padding(end = 8.dp)
+                            .align(Alignment.End)
                     ) {
+                        Text("Switch to Customer", fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    }
+                    // Profile Header Section
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp)
+                    ) {
+                        // Profile Picture
                         Box(
-                            modifier = Modifier
-                                .size(80.dp)
-                                .clip(CircleShape)
-                                .background(Color.LightGray)
-                        )
-                        // Edit icon for profile picture
-                        Box(
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clip(CircleShape)
-                                .background(YellowHighlight)
-                                .border(1.dp, Color.White, CircleShape)
-                                .clickable { showEditProfilePopup = true }
+                            contentAlignment = Alignment.BottomEnd,
+                            modifier = Modifier.size(80.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(80.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.LightGray)
+                            )
+                            // Edit icon for profile picture
+                            Box(
+                                modifier = Modifier
+                                    .size(24.dp)
+                                    .clip(CircleShape)
+                                    .background(YellowHighlight)
+                                    .border(1.dp, Color.White, CircleShape)
+                                    .clickable { showEditProfilePopup = true }
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Edit,
+                                    contentDescription = "Edit Profile",
+                                    tint = Color.Black,
+                                    modifier = Modifier
+                                        .size(16.dp)
+                                        .align(Alignment.Center)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = profile.name,
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Member since ${profile.memberSince}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                            Text(
+                                text = "${profile.completedJobs} / ${profile.totalJobs} jobs completed",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Color.Gray
+                            )
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(
+                                    imageVector = Icons.Default.LocationOn,
+                                    contentDescription = "Location",
+                                    tint = Color.Gray,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = profile.location,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = Color.Gray
+                                )
+                            }
+                        }
+                        // Edit profile icon
+                        IconButton(
+                            onClick = { showEditProfilePopup = true },
+                            modifier = Modifier.padding(start = 8.dp)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Edit,
                                 contentDescription = "Edit Profile",
-                                tint = Color.Black,
-                                modifier = Modifier
-                                    .size(16.dp)
-                                    .align(Alignment.Center)
+                                tint = Color.Gray
                             )
                         }
                     }
 
-                    Spacer(modifier = Modifier.width(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                    Column(
-                        modifier = Modifier.weight(1f)
+                    // Business Overview Section
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardBackground)
                     ) {
-                        Text(
-                            text = providerProfile.name,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            text = "Member since ${providerProfile.memberSince}",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
-                        )
-                        Text(
-                            text = "${providerProfile.completedJobs} / ${providerProfile.totalJobs} jobs completed",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Color.Gray
-                        )
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                imageVector = Icons.Default.LocationOn,
-                                contentDescription = "Location",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Spacer(modifier = Modifier.width(4.dp))
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
                             Text(
-                                text = providerProfile.location,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = Color.Gray
+                                text = "Business Overview",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
                             )
-                        }
-                    }
-                    // Edit profile icon
-                    IconButton(
-                        onClick = { showEditProfilePopup = true },
-                        modifier = Modifier.padding(start = 8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Edit,
-                            contentDescription = "Edit Profile",
-                            tint = Color.Gray
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Business Overview Section
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBackground)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text(
-                            text = "Business Overview",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            BusinessStat(label = "Total Jobs", value = providerProfile.totalJobs.toString())
-                            BusinessStat(label = "Total Earnings", value = providerProfile.totalEarnings)
-                        }
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                Canvas(modifier = Modifier.size(8.dp)) {
-                                    drawCircle(
-                                        color = if (providerProfile.isAvailable) Color(0xFF4CAF50) else Color(0xFFFF5252)
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                BusinessStat(label = "Total Jobs", value = profile.totalJobs.toString())
+                                BusinessStat(label = "Total Earnings", value = profile.totalEarnings)
+                            }
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                    Canvas(modifier = Modifier.size(8.dp)) {
+                                        drawCircle(
+                                            color = if (profile.isAvailable) Color(0xFF4CAF50) else Color(0xFFFF5252)
+                                        )
+                                    }
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = if (profile.isAvailable) "Available" else "Unavailable",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        color = if (profile.isAvailable) Color(0xFF4CAF50) else Color(0xFFFF5252)
                                     )
                                 }
-                                Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = if (providerProfile.isAvailable) "Available" else "Unavailable",
+                                    text = "Responses in ${profile.responseTime}",
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = if (providerProfile.isAvailable) Color(0xFF4CAF50) else Color(0xFFFF5252)
+                                    color = Color.Gray
                                 )
                             }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Contact Information Section
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardBackground)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
                             Text(
-                                text = "Responses in ${providerProfile.responseTime}",
-                                style = MaterialTheme.typography.bodyLarge,
-                                color = Color.Gray
+                                text = "Contact Information",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                            ContactInfoItem(icon = Icons.Default.Email, label = "Email Address", value = profile.email)
+                            ContactInfoItem(icon = Icons.Default.Phone, label = "Phone Number", value = profile.phoneNumber)
+                            ContactInfoItem(icon = Icons.Default.CalendarToday, label = "Join Date", value = "Member since ${profile.memberSince}")
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // Navigation Items Section
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = CardDefaults.cardColors(containerColor = CardBackground)
+                    ) {
+                        Column {
+                            NavigationItem(
+                                icon = R.drawable.wrench,
+                                label = "My Services",
+                                description = "Manage service offerings",
+                                onClick = onServicesClick
+                            )
+                            Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                            NavigationItem(
+                                icon = R.drawable.credit_card,
+                                label = "Payment Methods",
+                                description = "Manage costs & payments",
+                                onClick = onPaymentMethodsClick
+                            )
+                            Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                            NavigationItem(
+                                icon = R.drawable.shield,
+                                label = "Privacy & Security",
+                                description = "Account personnel",
+                                onClick = onPrivacySecurityClick
+                            )
+                            Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                            NavigationItem(
+                                icon = R.drawable.circle_help,
+                                label = "Help & Support",
+                                description = "Get assistance",
+                                onClick = onHelpSupportClick
                             )
                         }
                     }
-                }
 
-                Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                // Contact Information Section
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBackground)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(16.dp)
+                    // Log Out Button
+                    OutlinedButton(
+                        onClick = onLogoutClick,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(50.dp)
+                            .padding(horizontal = 16.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Red
+                        ),
+                        border = BorderStroke(1.dp, Color.Red),
+                        shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text(
-                            text = "Contact Information",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        ContactInfoItem(icon = Icons.Default.Email, label = "Email Address", value = providerProfile.email)
-                        ContactInfoItem(icon = Icons.Default.Phone, label = "Phone Number", value = providerProfile.phoneNumber)
-                        ContactInfoItem(icon = Icons.Default.CalendarToday, label = "Join Date", value = "Member since ${providerProfile.memberSince}")
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.Center
+                        ) {
+                            Icon(
+                                painter = painterResource(id = R.drawable.log_out),
+                                contentDescription = "Log Out",
+                                modifier = Modifier.size(20.dp),
+                                tint = Color.Red
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(
+                                "Log Out",
+                                fontSize = 16.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
+
+                    Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                // Navigation Items Section
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardBackground)
-                ) {
-                    Column {
-                        NavigationItem(
-                            icon = R.drawable.wrench,
-                            label = "My Services",
-                            description = "Manage service offerings",
-                            onClick = onServicesClick
-                        )
-                        Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
-                        NavigationItem(
-                            icon = R.drawable.credit_card,
-                            label = "Payment Methods",
-                            description = "Manage costs & payments",
-                            onClick = onPaymentMethodsClick
-                        )
-                        Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
-                        NavigationItem(
-                            icon = R.drawable.shield,
-                            label = "Privacy & Security",
-                            description = "Account personnel",
-                            onClick = onPrivacySecurityClick
-                        )
-                        Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
-                        NavigationItem(
-                            icon = R.drawable.circle_help,
-                            label = "Help & Support",
-                            description = "Get assistance",
-                            onClick = onHelpSupportClick
-                        )
-                    }
+                // Edit Profile Popup
+                if (showEditProfilePopup) {
+                    EditProfilePopup(
+                        userProfile = UserProfile(
+                            name = profile.name,
+                            phoneNumber = profile.phoneNumber,
+                            memberSince = profile.memberSince,
+                            location = profile.location,
+                            totalBookings = 0,
+                            completedBookings = 0,
+                            rating = 0.0,
+                            email = profile.email,
+                            joinDate = profile.memberSince
+                        ),
+                        onDismiss = { showEditProfilePopup = false },
+                        onSave = { newName, newPhoneNumber ->
+                            viewModel.updateProviderProfile(
+                                name = newName,
+                                phoneNumber = newPhoneNumber
+                            )
+                            showEditProfilePopup = false
+                        }
+                    )
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Log Out Button
-                OutlinedButton(
-                    onClick = onLogoutClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(50.dp)
-                        .padding(horizontal = 16.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        containerColor = Color.White,
-                        contentColor = Color.Red
-                    ),
-                    border = BorderStroke(1.dp, Color.Red),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.log_out),
-                            contentDescription = "Log Out",
-                            modifier = Modifier.size(20.dp),
-                            tint = Color.Red
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            "Log Out",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
             }
-
-            // Edit Profile Popup
-            if (showEditProfilePopup) {
-                EditProfilePopup(
-                    userProfile = UserProfile(
-                        name = providerProfile.name,
-                        phoneNumber = providerProfile.phoneNumber,
-                        // Provide default values for other fields
-                        memberSince = providerProfile.memberSince,
-                        location = providerProfile.location,
-                        totalBookings = 0,
-                        completedBookings = 0,
-                        rating = 0.0,
-                        email = providerProfile.email,
-                        joinDate = providerProfile.memberSince
-                    ),
-                    onDismiss = { showEditProfilePopup = false },
-                    onSave = { newName, newPhoneNumber ->
-                        providerProfile = providerProfile.copy(
-                            name = newName,
-                            phoneNumber = newPhoneNumber
-                        )
-                        showEditProfilePopup = false
-                    }
-                )
-            }
+        }
+    } ?: run {
+        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator()
         }
     }
 }
@@ -463,7 +478,6 @@ fun ProviderProfileScreenPreview() {
             responseTime = "1 hour"
         )
         ProviderProfileScreen(
-            initialProviderProfile = sampleProfile,
             navController = rememberNavController(),
             onLogoutClick = {},
             onServicesClick = {},

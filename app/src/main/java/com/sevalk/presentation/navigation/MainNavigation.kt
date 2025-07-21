@@ -6,9 +6,9 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.sevalk.presentation.provider.profile.ProviderProfileViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.sevalk.data.models.Job
 import com.sevalk.presentation.auth.AuthState
 import com.sevalk.presentation.auth.AuthViewModel
 import com.sevalk.presentation.chat.ChatScreen
@@ -17,12 +17,10 @@ import com.sevalk.presentation.customer.booking.MyBookingsScreen
 import com.sevalk.presentation.customer.home.HomeScreen
 import com.sevalk.presentation.customer.home.ServiceProviderMapScreen
 import com.sevalk.presentation.customer.profile.CustomerProfileScreen
-import com.sevalk.presentation.customer.profile.UserProfile
 import com.sevalk.presentation.provider.home.ProviderHomeScreen
+import com.sevalk.presentation.provider.jobs.CreateServiceBillScreen
 import com.sevalk.presentation.provider.jobs.JobsScreen
-import com.sevalk.presentation.provider.profile.ProviderProfile
 import com.sevalk.presentation.provider.profile.ProviderProfileScreen
-import com.sevalk.presentation.provider.profile.ProviderProfileState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -33,7 +31,6 @@ fun MainNavigation(
     val authState by remember { derivedStateOf { authViewModel.authState } }
     val isProviderMode by remember { derivedStateOf { authViewModel.isProviderMode } }
 
-    
     // Handle auth state changes
     LaunchedEffect(authState) {
         when (authState) {
@@ -56,7 +53,7 @@ fun MainNavigation(
     var customerSelectedTab by remember { mutableStateOf(CustomerNavigationTab.HOME) }
     var providerSelectedTab by remember { mutableStateOf(ProviderNavigationTab.DASHBOARD) }
     var showCreateBillScreen by remember { mutableStateOf(false) }
-    var selectedJobForBill by remember { mutableStateOf<com.sevalk.data.models.Job?>(null) }
+    var selectedJobForBill by remember { mutableStateOf<Job?>(null) }
     
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -84,7 +81,7 @@ fun MainNavigation(
 
     // Show CreateServiceBillScreen if needed
     if (showCreateBillScreen && selectedJobForBill != null) {
-        com.sevalk.presentation.provider.jobs.CreateServiceBillScreen(
+        CreateServiceBillScreen(
             job = selectedJobForBill!!,
             onBackClick = {
                 showCreateBillScreen = false
@@ -182,52 +179,21 @@ fun MainNavigation(
                         )
                     }
                     ProviderNavigationTab.BUSINESS -> {
-                        val viewModel: ProviderProfileViewModel = hiltViewModel()
-                        val profileState by viewModel.profileState.collectAsState()
-
-                        Box(
-                            modifier = Modifier.fillMaxSize(),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            when (val state = profileState) {
-                                is ProviderProfileState.Loading -> {
-                                    CircularProgressIndicator()
-                                }
-                                is ProviderProfileState.Success -> {
-                                    ProviderProfileScreen(
-                                        initialProviderProfile = state.profile,
-                                        navController = navController,
-                                        onLogoutClick = {
-                                            authViewModel.signOut()
-                                        },
-                                        onServicesClick = {
-                                            navController.navigate("provider/services")
-                                        },
-                                        onPaymentMethodsClick = {
-                                            navController.navigate("provider/payments")
-                                        },
-                                        onPrivacySecurityClick = {
-                                            navController.navigate("provider/privacy")
-                                        },
-                                        onHelpSupportClick = {
-                                            navController.navigate("provider/support")
-                                        },
-                                        onSwitchToCustomerClick = switchToCustomerMode
-                                    )
-                                }
-                                is ProviderProfileState.Error -> {
-                                    Column(
-                                        horizontalAlignment = Alignment.CenterHorizontally,
-                                        verticalArrangement = Arrangement.Center
-                                    ) {
-                                        Text("Error: ${state.message}")
-                                        Button(onClick = { viewModel.loadProviderProfile() }) {
-                                            Text("Retry")
-                                        }
-                                    }
-                                }
-                            }
-                        }
+                        ProviderProfileScreen(
+                            navController = navController,
+                            onLogoutClick = {
+                                authViewModel.signOut()
+                            },
+                            onServicesClick = {
+                                navController.navigate("provider/services")
+                            },
+                            onPaymentMethodsClick = {
+                                navController.navigate("provider/payments")
+                            },
+                            onPrivacySecurityClick = {},
+                            onHelpSupportClick = {},
+                            onSwitchToCustomerClick = {}
+                        )
                     }
                 }
             } else {
@@ -256,10 +222,7 @@ fun MainNavigation(
                             navController = navController,
                             onSwitchToProviderClick = switchToProviderMode,
                             onLogoutClick = {
-                                // Handle logout
-                                navController.navigate(Screen.Login.route) {
-                                    popUpTo(Screen.CustomerHome.route) { inclusive = true }
-                                }
+                                authViewModel.signOut()
                             },
                             onFavoritesClick = {},
                             onPaymentMethodsClick = {  },
