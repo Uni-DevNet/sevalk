@@ -13,6 +13,7 @@ import com.sevalk.presentation.auth.registration.RegistrationScreen
 import com.sevalk.presentation.auth.welcome.WelcomeScreen
 import com.sevalk.presentation.chat.ChatScreen
 import com.sevalk.presentation.chat.InboxScreen
+import com.sevalk.presentation.customer.booking.BookingConfirmationScreen
 import com.sevalk.presentation.customer.booking.BookingDetailsScreen
 import com.sevalk.presentation.customer.booking.BookingScreen
 import com.sevalk.presentation.customer.home.HomeScreen
@@ -188,10 +189,36 @@ fun SevaLKNavigation(
                 providerId = providerId,
                 onNavigateBack = { 
                     navController.popBackStack() 
+                },
+                onNavigateToConfirmation = { bookingId, providerName, serviceName ->
+                    navController.navigate(
+                        Screen.BookingConfirmation.createRoute(bookingId, providerName, serviceName)
+                    ) {
+                        popUpTo("booking/$providerId") { inclusive = true }
+                    }
                 }
             )
         }
-        
+
+        composable(
+            route = "booking_confirmation/{bookingId}/{providerName}/{serviceName}",
+            arguments = listOf(
+                navArgument("bookingId") { type = NavType.StringType },
+                navArgument("providerName") { type = NavType.StringType },
+                navArgument("serviceName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
+            val providerName = backStackEntry.arguments?.getString("providerName") ?: ""
+            val serviceName = backStackEntry.arguments?.getString("serviceName") ?: ""
+            BookingConfirmationScreen(
+                navController = navController,
+                bookingId = bookingId,
+                providerName = providerName,
+                serviceName = serviceName
+            )
+        }
+
         // Provider Flow
         composable(Screen.CustomerHome.route) {
             HomeScreen(
