@@ -1,6 +1,7 @@
 package com.sevalk.di
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.sevalk.data.repository.PaymentRepository
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -9,10 +10,17 @@ import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-object DatabaseModule {
+object RepositoryModule {
+
+    
     @Provides
     @Singleton
-    fun provideFirestore(): FirebaseFirestore {
-        return FirebaseFirestore.getInstance()
+    fun providePaymentRepository(
+        firestore: FirebaseFirestore
+    ): PaymentRepository {
+        return PaymentRepository(firestore)
     }
+    
+
 }
+

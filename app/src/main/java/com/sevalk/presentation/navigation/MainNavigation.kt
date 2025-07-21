@@ -3,8 +3,10 @@ package com.sevalk.presentation.navigation
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.sevalk.presentation.provider.profile.ProviderProfileViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.sevalk.presentation.auth.AuthState
@@ -20,6 +22,7 @@ import com.sevalk.presentation.provider.home.ProviderHomeScreen
 import com.sevalk.presentation.provider.jobs.JobsScreen
 import com.sevalk.presentation.provider.profile.ProviderProfile
 import com.sevalk.presentation.provider.profile.ProviderProfileScreen
+import com.sevalk.presentation.provider.profile.ProviderProfileState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -29,6 +32,7 @@ fun MainNavigation(
 ) {
     val authState by remember { derivedStateOf { authViewModel.authState } }
     val isProviderMode by remember { derivedStateOf { authViewModel.isProviderMode } }
+
     
     // Handle auth state changes
     LaunchedEffect(authState) {
@@ -178,27 +182,52 @@ fun MainNavigation(
                         )
                     }
                     ProviderNavigationTab.BUSINESS -> {
-                        ProviderProfileScreen(
-                            initialProviderProfile = ProviderProfile(
-                                name = "John Plumbing",
-                                memberSince = "March 2023",
-                                completedJobs = 43,
-                                totalJobs = 327,
-                                location = "Weligama, Southern Province",
-                                totalEarnings = "LKR 45,600",
-                                email = "john.obus@email.com",
-                                phoneNumber = "+44 77 123 4567",
-                                isAvailable = true,
-                                responseTime = "1 hour"
-                            ),
-                            onLogoutClick = {},
-                            onServicesClick = {},
-                            onPaymentMethodsClick = {},
-                            onPrivacySecurityClick = {},
-                            onHelpSupportClick = {},
-                            navController = navController,
-                            onSwitchToCustomerClick = switchToCustomerMode
-                        )
+                        val viewModel: ProviderProfileViewModel = hiltViewModel()
+                        val profileState by viewModel.profileState.collectAsState()
+
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            when (val state = profileState) {
+                                is ProviderProfileState.Loading -> {
+                                    CircularProgressIndicator()
+                                }
+                                is ProviderProfileState.Success -> {
+                                    ProviderProfileScreen(
+                                        initialProviderProfile = state.profile,
+                                        navController = navController,
+                                        onLogoutClick = {
+                                            authViewModel.signOut()
+                                        },
+                                        onServicesClick = {
+                                            navController.navigate("provider/services")
+                                        },
+                                        onPaymentMethodsClick = {
+                                            navController.navigate("provider/payments")
+                                        },
+                                        onPrivacySecurityClick = {
+                                            navController.navigate("provider/privacy")
+                                        },
+                                        onHelpSupportClick = {
+                                            navController.navigate("provider/support")
+                                        },
+                                        onSwitchToCustomerClick = switchToCustomerMode
+                                    )
+                                }
+                                is ProviderProfileState.Error -> {
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
+                                        verticalArrangement = Arrangement.Center
+                                    ) {
+                                        Text("Error: ${state.message}")
+                                        Button(onClick = { viewModel.loadProviderProfile() }) {
+                                            Text("Retry")
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             } else {
@@ -225,17 +254,17 @@ fun MainNavigation(
                     CustomerNavigationTab.PROFILE -> {
                         CustomerProfileScreen(
                             navController = navController,
-                            onSwitchToProviderClick = { /* Navigate to provider registration */ },
+                            onSwitchToProviderClick = switchToProviderMode,
                             onLogoutClick = {
                                 // Handle logout
                                 navController.navigate(Screen.Login.route) {
                                     popUpTo(Screen.CustomerHome.route) { inclusive = true }
                                 }
                             },
-                            onFavoritesClick = { /* Navigate to favorites */ },
-                            onPaymentMethodsClick = { /* Navigate to payment methods */ },
-                            onPrivacySecurityClick = { /* Navigate to privacy settings */ },
-                            onHelpSupportClick = { /* Navigate to help & support */ }
+                            onFavoritesClick = {},
+                            onPaymentMethodsClick = {  },
+                            onPrivacySecurityClick = {  },
+                            onHelpSupportClick = {  }
                         )
                     }
                 }

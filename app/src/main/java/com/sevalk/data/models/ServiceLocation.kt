@@ -7,9 +7,10 @@ data class ServiceLocation(
     val address: String = "",
     val city: String = "",
     val province: String = "",
-    val country: String = "",
+    val country: String = "",  // Add country field
     val latitude: Double = 0.0,
-    val longitude: Double = 0.0
+    val longitude: Double = 0.0,
+    val formattedAddress: String = "" // For full formatted address from Google Maps
 ) {
     companion object {
         private val gson = Gson()

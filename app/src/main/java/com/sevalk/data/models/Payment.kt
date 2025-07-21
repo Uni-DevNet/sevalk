@@ -2,12 +2,12 @@ package com.sevalk.data.models
 
 data class Payment(
     val id: String = "",
-    val bookingId: String = "",
-    val customerId: String = "",
-    val providerId: String = "",
-    val amount: Double = 0.0,
+    val bookingId: String,  // Remove default empty string
+    val customerId: String, // Remove default empty string
+    val providerId: String, // Remove default empty string
+    val amount: Double,     // Remove default 0.0
     val currency: String = "LKR",
-    val paymentMethod: PaymentMethodType = PaymentMethodType.CASH,
+    val paymentMethod: PaymentMethodType,
     val paymentDetails: PaymentDetails? = null,
     val status: PaymentStatus = PaymentStatus.PENDING,
     val transactionId: String = "",
@@ -85,4 +85,13 @@ enum class RefundStatus {
 
 enum class WalletTransactionType {
     CREDIT, DEBIT, REFUND, WITHDRAWAL
+}
+
+enum class PaymentStatus {
+    PENDING,
+    PROCESSING,
+    COMPLETED,
+    FAILED,
+    REFUNDED,
+    CANCELLED
 }
