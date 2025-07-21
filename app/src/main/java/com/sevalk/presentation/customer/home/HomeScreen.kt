@@ -37,20 +37,15 @@ import com.sevalk.ui.theme.S_INPUT_BACKGROUND
 import androidx.navigation.NavController
 import com.sevalk.presentation.navigation.Screen
 import com.sevalk.ui.theme.SevaLKTheme
+import com.sevalk.presentation.customer.booking.MyBookingsViewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.sevalk.presentation.customer.booking.BookingCard
 
 data class ServiceItem(
     val name: String,
     val icon: ImageVector,
-    val backgroundColor: Color
-)
-
-data class BookingItem(
-    val serviceName: String,
-    val providerName: String,
-    val date: String,
-    val time: String,
-    val status: String,
-    val statusColor: Color
+    val backgroundColor: Color,
+    val serviceType: com.sevalk.presentation.components.map.ServiceType
 )
 
 data class ProviderItem(
@@ -66,37 +61,21 @@ data class ProviderItem(
 fun HomeScreen(
     navController: NavController,
     onSwitchToProvider: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onServiceSelected: ((com.sevalk.presentation.components.map.ServiceType) -> Unit)? = null,
+    modifier: Modifier = Modifier,
+    myBookingsViewModel: MyBookingsViewModel = hiltViewModel()
 ) {
     var searchQuery by remember { mutableStateOf("") }
+    var showAllBookings by remember { mutableStateOf(false) }
 
     // Sample data with only confirmed available Material Icons
     val popularServices = listOf(
-        ServiceItem("Plumbing", Icons.Default.Build, Color(0xFF6366F1)),
-        ServiceItem("Electrical", Icons.Default.Settings, Color(0xFFF59E0B)), // Using Settings icon
-        ServiceItem("Cleaning", Icons.Default.Home, Color(0xFF10B981)),
-        ServiceItem("Auto Repair", Icons.Default.Build, Color(0xFFEF4444)), // Using Build icon
-        ServiceItem("Tutoring", Icons.Default.Person, Color(0xFF8B5CF6)), // Using Person icon
-        ServiceItem("Beauty", Icons.Default.Face, Color(0xFFEC4899))
-    )
-
-    val bookings = listOf(
-        BookingItem(
-            "Plumbing repair",
-            "Mike's Plumbing",
-            "Today",
-            "2:00 PM - 4:00 PM",
-            "pending",
-            Color(0xFFF59E0B)
-        ),
-        BookingItem(
-            "Math Tutoring",
-            "Ian Chen",
-            "Tomorrow",
-            "3:00 PM - 4:00 PM",
-            "pending",
-            Color(0xFFF59E0B)
-        )
+        ServiceItem("Plumbing", Icons.Default.Build, Color(0xFF6366F1), com.sevalk.presentation.components.map.ServiceType.PLUMBING),
+        ServiceItem("Electrical", Icons.Default.Settings, Color(0xFFF59E0B), com.sevalk.presentation.components.map.ServiceType.ELECTRICAL),
+        ServiceItem("Cleaning", Icons.Default.Home, Color(0xFF10B981), com.sevalk.presentation.components.map.ServiceType.CLEANING),
+        ServiceItem("Auto Repair", Icons.Default.Build, Color(0xFFEF4444), com.sevalk.presentation.components.map.ServiceType.ALL),
+        ServiceItem("Tutoring", Icons.Default.Person, Color(0xFF8B5CF6), com.sevalk.presentation.components.map.ServiceType.ALL),
+        ServiceItem("Beauty", Icons.Default.Face, Color(0xFFEC4899), com.sevalk.presentation.components.map.ServiceType.ALL)
     )
 
     val providers = listOf(
@@ -218,7 +197,7 @@ fun HomeScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             items(popularServices) { service ->
-                ServiceCard(service = service)
+                ServiceCard(service = service, onClick = { onServiceSelected?.invoke(service.serviceType) })
             }
         }
 
@@ -237,23 +216,42 @@ fun HomeScreen(
                 modifier = Modifier.weight(1f)
             )
             Text(
-                "View All",
+                text = if (showAllBookings) "Show Less" else "View All",
                 color = S_YELLOW,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
-                modifier = Modifier.clickable { /* TODO */ }
+                modifier = Modifier.clickable { showAllBookings = !showAllBookings }
             )
         }
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        bookings.forEach { booking ->
-            BookingCard(
-                booking = booking,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+        val bookings by myBookingsViewModel.bookings.collectAsState()
+        val isLoading by myBookingsViewModel.isLoading.collectAsState()
+        val error by myBookingsViewModel.error.collectAsState()
+
+        if (isLoading) {
+            CircularProgressIndicator(color = Color(0xFFFFC107))
+        } else if (bookings.isEmpty()) {
+            Text(
+                text = "No bookings found",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Gray
             )
+        } else {
+            val bookingsToShow = if (showAllBookings) bookings else bookings.take(2)
+            bookingsToShow.forEach { booking ->
+                BookingCard(
+                    booking = booking,
+                    onBookingClick = { bookingId ->
+                        navController.navigate("booking_details/$bookingId")
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -297,12 +295,13 @@ fun HomeScreen(
 @Composable
 fun ServiceCard(
     service: ServiceItem,
+    onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .size(width = 100.dp, height = 70.dp)
-            .clickable { /* TODO */ },
+            .clickable { onClick() },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -332,74 +331,6 @@ fun ServiceCard(
                 fontWeight = FontWeight.Medium,
                 color = Color.Black
             )
-        }
-    }
-}
-
-@Composable
-fun BookingCard(
-    booking: BookingItem,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier.clickable { /* TODO */ },
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(40.dp)
-                    .background(Color(0xFFF3F4F6), CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    Icons.Default.Build,
-                    contentDescription = null,
-                    tint = Color.Gray,
-                    modifier = Modifier.size(20.dp)
-                )
-            }
-
-            Spacer(modifier = Modifier.width(12.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    booking.serviceName,
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 14.sp,
-                    color = Color.Black
-                )
-                Text(
-                    booking.providerName,
-                    fontSize = 12.sp,
-                    color = S_LIGHT_TEXT
-                )
-                Text(
-                    "${booking.date} • ${booking.time}",
-                    fontSize = 12.sp,
-                    color = S_LIGHT_TEXT
-                )
-            }
-
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = booking.statusColor.copy(alpha = 0.1f)
-            ) {
-                Text(
-                    booking.status,
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = booking.statusColor
-                )
-            }
         }
     }
 }
