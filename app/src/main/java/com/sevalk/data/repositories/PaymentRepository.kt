@@ -1,4 +1,4 @@
-package com.sevalk.data.repository
+package com.sevalk.data.repositories
 
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sevalk.data.models.Payment
@@ -15,7 +15,7 @@ class PaymentRepository @Inject constructor(
         return try {
             val paymentRef = firestore.collection("payments").document()
             val paymentWithId = payment.copy(id = paymentRef.id)
-            
+
             paymentRef.set(paymentWithId).await()
             Result.success(paymentWithId)
         } catch (e: Exception) {
@@ -41,7 +41,7 @@ class PaymentRepository @Inject constructor(
                 .document(paymentId)
                 .get()
                 .await()
-            
+
             val payment = snapshot.toObject(Payment::class.java)
             if (payment != null) {
                 Result.success(payment)

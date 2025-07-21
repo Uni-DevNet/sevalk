@@ -7,7 +7,7 @@ import com.sevalk.data.models.Payment
 import com.sevalk.data.models.PaymentDetails
 import com.sevalk.data.models.PaymentMethodType
 import com.sevalk.data.models.PaymentStatus
-import com.sevalk.data.repository.PaymentRepository
+import com.sevalk.data.repositories.PaymentRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

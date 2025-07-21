@@ -51,7 +51,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.sevalk.R
 import com.sevalk.data.models.PaymentMethodType
-import com.sevalk.data.repository.PaymentRepository
+import com.sevalk.data.repositories.PaymentRepository
 import com.sevalk.domain.payment.PaymentViewModel
 import com.sevalk.ui.theme.S_BLUE
 import com.sevalk.ui.theme.S_BLUE_BACKGROUND
