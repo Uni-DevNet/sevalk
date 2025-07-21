@@ -40,6 +40,14 @@ import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.presentation.customer.booking.MyBookingsViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.sevalk.presentation.customer.booking.BookingCard
+import com.sevalk.presentation.components.map.ServiceType
+import com.sevalk.presentation.components.map.ServiceProvider
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.location.LocationServices
+import com.sevalk.utils.Constants
+import com.sevalk.presentation.components.map.calculateDistance
+import android.location.Geocoder
+import java.util.Locale
 
 data class ServiceItem(
     val name: String,
@@ -48,14 +56,15 @@ data class ServiceItem(
     val serviceType: com.sevalk.presentation.components.map.ServiceType
 )
 
-data class ProviderItem(
-    val name: String,
-    val service: String,
-    val rating: Float,
-    val distance: String,
-    val availability: String,
-    val availabilityColor: Color
-)
+fun getGreeting(): String {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 4..11 -> "Good Morning!"
+        in 12..16 -> "Good Afternoon!"
+        in 17..19 -> "Good Evening!"
+        else -> "Good Night!"
+    }
+}
 
 @Composable
 fun HomeScreen(
@@ -63,7 +72,8 @@ fun HomeScreen(
     onSwitchToProvider: (() -> Unit)? = null,
     onServiceSelected: ((com.sevalk.presentation.components.map.ServiceType) -> Unit)? = null,
     modifier: Modifier = Modifier,
-    myBookingsViewModel: MyBookingsViewModel = hiltViewModel()
+    myBookingsViewModel: MyBookingsViewModel = hiltViewModel(),
+    serviceProviders: List<ServiceProvider> = emptyList()
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showAllBookings by remember { mutableStateOf(false) }
@@ -78,24 +88,39 @@ fun HomeScreen(
         ServiceItem("Beauty", Icons.Default.Face, Color(0xFFEC4899), com.sevalk.presentation.components.map.ServiceType.ALL)
     )
 
-    val providers = listOf(
-        ProviderItem(
-            "Mike's Plumbing",
-            "Plumbing",
-            4.8f,
-            "2.3km",
-            "Available",
-            Color(0xFF10B981)
-        ),
-        ProviderItem(
-            "Sarah Electronics",
-            "Electrical",
-            4.4f,
-            "1.5km",
-            "Available",
-            Color(0xFF10B981)
-        )
-    )
+    val context = LocalContext.current
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    var currentAddress by remember { mutableStateOf<String?>(null) }
+
+    // Request location on first composition
+    LaunchedEffect(Unit) {
+        // You may want to check permissions here!
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            location?.let {
+                currentLocation = LatLng(it.latitude, it.longitude)
+            }
+        }
+    }
+
+    // Reverse geocode when currentLocation changes
+    LaunchedEffect(currentLocation) {
+        currentLocation?.let { loc ->
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    val address = addresses[0]
+                    val addressLine = address.getAddressLine(0)
+                    currentAddress = addressLine
+                } else {
+                    currentAddress = null
+                }
+            } catch (e: Exception) {
+                currentAddress = null
+            }
+        }
+    }
 
     Column(
         modifier = modifier
@@ -111,7 +136,7 @@ fun HomeScreen(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "Good Morning!",
+                    getGreeting(),
                     fontWeight = FontWeight.Bold,
                     fontSize = 20.sp,
                     color = Color.Black
@@ -119,7 +144,7 @@ fun HomeScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("📍 ", fontSize = 14.sp)
                     Text(
-                        "Weligama, Southern Province",
+                        currentAddress ?: "Weligama, Southern Province",
                         color = S_LIGHT_TEXT,
                         fontSize = 14.sp
                     )
@@ -280,13 +305,45 @@ fun HomeScreen(
         Spacer(modifier = Modifier.height(8.dp))
 
         // Only show currently available providers
-        providers.filter { it.availability == "Available" }.forEach { provider ->
-            ProviderCard(
-                provider = provider,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(vertical = 4.dp)
+        val filteredProviders = remember(serviceProviders, currentLocation) {
+            serviceProviders.filter { provider ->
+                currentLocation?.let { current ->
+                    val distance = calculateDistance(
+                        current.latitude,
+                        current.longitude,
+                        provider.latitude,
+                        provider.longitude
+                    )
+                    distance <= Constants.NEARBY_PROVIDER_RADIUS_KM * 1000 // e.g., 5000 for 5km
+                } ?: true // If location not available, show all
+            }
+        }
+
+        if (filteredProviders.isEmpty()) {
+            Text(
+                text = "No nearby providers found",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Gray
             )
+        } else {
+            filteredProviders.forEach { provider ->
+                val distance = currentLocation?.let { current ->
+                    calculateDistance(
+                        current.latitude,
+                        current.longitude,
+                        provider.latitude,
+                        provider.longitude
+                    ) / 1000f // Convert to km
+                }
+                ProviderCard(
+                    provider = provider,
+                    distanceKm = distance,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                )
+            }
         }
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -338,11 +395,12 @@ fun ServiceCard(
 
 @Composable
 fun ProviderCard(
-    provider: ProviderItem,
+    provider: ServiceProvider,
+    distanceKm: Float?,
     modifier: Modifier = Modifier
 ) {
     Card(
-        modifier = modifier.clickable { /* TODO */ },
+        modifier = modifier.clickable { /* TODO: Handle click */ },
         shape = RoundedCornerShape(12.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
@@ -377,9 +435,9 @@ fun ProviderCard(
                     color = Color.Black
                 )
                 Text(
-                    provider.service,
+                    provider.type.displayName,
                     fontSize = 12.sp,
-                    color = S_LIGHT_TEXT
+                    color = Color.Gray
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
@@ -389,23 +447,24 @@ fun ProviderCard(
                         modifier = Modifier.size(12.dp)
                     )
                     Text(
-                        " ${provider.rating} (${(provider.rating * 20).toInt()}) • ${provider.distance}",
+                        " ${provider.rating} (${provider.completedJobs})" +
+                        (distanceKm?.let { " • %.1f km".format(it) } ?: ""),
                         fontSize = 12.sp,
-                        color = S_LIGHT_TEXT
+                        color = Color.Gray
                     )
                 }
             }
 
             Surface(
                 shape = RoundedCornerShape(12.dp),
-                color = provider.availabilityColor.copy(alpha = 0.1f)
+                color = Color(0xFF10B981).copy(alpha = 0.1f)
             ) {
                 Text(
-                    provider.availability,
+                    "Available", // You can add logic for availability if you have it
                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Medium,
-                    color = provider.availabilityColor
+                    color = Color(0xFF10B981)
                 )
             }
         }
@@ -416,7 +475,27 @@ fun ProviderCard(
 @Composable
 @Preview(showBackground = true)
 fun HomeScreenPreview() {
+    val sampleProviders = listOf(
+        ServiceProvider(
+            id = "1",
+            name = "Mike's Plumbing",
+            type = ServiceType.PLUMBING,
+            latitude = 6.0367, // Example: Weligama, Sri Lanka
+            longitude = 80.2170,
+            rating = 4.8f,
+            completedJobs = 25
+        ),
+        ServiceProvider(
+            id = "2",
+            name = "Sarah Electronics",
+            type = ServiceType.ELECTRICAL,
+            latitude = 0.0,
+            longitude = 0.0,
+            rating = 4.4f,
+            completedJobs = 18
+        )
+    )
     SevaLKTheme {
-        HomeScreen(navController = NavController(context = LocalContext.current))
+        HomeScreen(navController = NavController(context = LocalContext.current), serviceProviders = sampleProviders)
     }
 }
