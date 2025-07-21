@@ -155,7 +155,7 @@ fun MainNavigation(
             if (isProviderMode) {
                 when (providerSelectedTab) {
                     ProviderNavigationTab.DASHBOARD -> {
-                        ProviderHomeScreen(navController = navController)
+                        ProviderHomeScreen(navController = navController, onSwitchToCustomer = switchToCustomerMode)
                     }
                     ProviderNavigationTab.JOBS -> {
                         JobsScreen(

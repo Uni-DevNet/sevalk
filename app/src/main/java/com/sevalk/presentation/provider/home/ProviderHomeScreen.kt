@@ -40,7 +40,10 @@ data class Job(
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ProviderHomeScreen(navController: NavController) {
+fun ProviderHomeScreen(
+    navController: NavController,
+    onSwitchToCustomer: (() -> Unit)? = null
+) {
     var selectedTab by remember { mutableStateOf(1) } // 1 = My Business selected by default
     val upcomingJobs = listOf(
         Job("Plumbing repair", "Customer: John Doe", "Tomorrow, 1:00 PM", "Pending", Icons.Default.Build),
@@ -51,7 +54,7 @@ fun ProviderHomeScreen(navController: NavController) {
         modifier = Modifier
             .fillMaxSize()
             .background(Color.White)
-            .padding(16.dp)
+            .padding(horizontal = 16.dp)
     ) {
         item {
             // Header
@@ -98,10 +101,7 @@ fun ProviderHomeScreen(navController: NavController) {
                 com.sevalk.presentation.components.common.PrimaryButton(
                     text = "Find Services",
                     onClick = { 
-                        navController.navigate(Screen.Home.route) {
-                            // Clear back stack to prevent going back to provider home
-                            popUpTo(Screen.ProviderHome.route) { inclusive = false }
-                        }
+                       onSwitchToCustomer?.invoke()
                     },
                     modifier = Modifier.weight(1f),
                     style = if (selectedTab == 0) com.sevalk.presentation.components.common.PrimaryButtonStyle.TEXT else com.sevalk.presentation.components.common.PrimaryButtonStyle.OUTLINE,

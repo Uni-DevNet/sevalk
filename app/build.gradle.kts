@@ -17,7 +17,6 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -86,6 +85,10 @@ dependencies {
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
     implementation(libs.firebase.crashlytics.buildtools)
+
+    // Splash Screen API
+    implementation("androidx.core:core-splashscreen:1.0.0")
+
     
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.2.0")
@@ -97,6 +100,10 @@ dependencies {
     implementation("com.sun.mail:android-mail:1.6.7")
     implementation("com.sun.mail:android-activation:1.6.7")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+
+    // Change status bar color
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
     
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

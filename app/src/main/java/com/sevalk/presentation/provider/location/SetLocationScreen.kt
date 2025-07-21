@@ -98,7 +98,8 @@ fun SetLocationScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .padding(bottom = 40.dp),
                 verticalArrangement = Arrangement.spacedBy(24.dp)
             ) {
                 Spacer(modifier = Modifier.height(8.dp))
@@ -467,6 +468,8 @@ private fun GoogleMapSelectionSection(
                 },
                 leadingIcon = { 
                     Icon(
+                        modifier = Modifier
+                            .size(24.dp),
                         painter = painterResource(id = R.drawable.search), 
                         tint = Color.Unspecified, 
                         contentDescription = "Search Icon"
