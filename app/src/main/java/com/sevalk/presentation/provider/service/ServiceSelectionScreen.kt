@@ -57,6 +57,8 @@ fun ServiceSelectionScreen(
     }
 
     Scaffold(
+        modifier = Modifier
+            .padding(bottom = 40.dp),
         topBar = {
             TopAppBar(
                 title = { Text("Set Up Your Services", fontWeight = FontWeight.Medium, fontSize = 24.sp) },
@@ -115,7 +117,15 @@ fun SearchBar(query: String, onQueryChanged: (String) -> Unit) {
         onValueChange = onQueryChanged,
         modifier = Modifier.fillMaxWidth(),
         placeholder = { Text("Search services...") },
-        leadingIcon = { Icon(painter = painterResource(id = R.drawable.search), tint = Color.Unspecified, contentDescription = "Search Icon") },
+        leadingIcon = {
+            Icon(
+                modifier = Modifier
+                    .size(24.dp),
+                painter = painterResource(id = R.drawable.search),
+                tint = Color.Unspecified,
+                contentDescription = "Search Icon")
+
+                      },
         shape = RoundedCornerShape(12.dp),
         colors = OutlinedTextFieldDefaults.colors(
             unfocusedContainerColor = Color(0xFFF0F0F0),
