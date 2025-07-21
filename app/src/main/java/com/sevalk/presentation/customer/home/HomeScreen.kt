@@ -279,7 +279,8 @@ fun HomeScreen(
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        providers.forEach { provider ->
+        // Only show currently available providers
+        providers.filter { it.availability == "Available" }.forEach { provider ->
             ProviderCard(
                 provider = provider,
                 modifier = Modifier

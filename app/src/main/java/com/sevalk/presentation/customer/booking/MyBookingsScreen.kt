@@ -9,9 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccessTime
-import androidx.compose.material.icons.filled.Call
-import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -234,7 +232,15 @@ fun BookingCard(
     } catch (e: Exception) {
         "Date not available"
     }
-    
+
+    // Map serviceName to icon and color (match HomeScreen)
+    val (categoryIcon, categoryColor) = when (booking.serviceName) {
+        "Plumbing" -> Pair(Icons.Default.Build, Color(0xFF6366F1))
+        "Electrical" -> Pair(Icons.Default.Settings, Color(0xFFF59E0B))
+        "Cleaning" -> Pair(Icons.Default.Home, Color(0xFF10B981))
+        else -> Pair(Icons.Default.AccountBox, Color(0xFFFFC107))
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -249,6 +255,21 @@ fun BookingCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Category Icon
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(categoryColor.copy(alpha = 0.15f), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = categoryIcon,
+                    contentDescription = booking.serviceName,
+                    tint = categoryColor,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
             // Booking Details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -279,7 +300,6 @@ fun BookingCard(
                     )
                 }
             }
-            
             Column(
                 horizontalAlignment = Alignment.End
             ) {
@@ -296,9 +316,7 @@ fun BookingCard(
                         color = statusInfo.color
                     )
                 }
-                
                 Spacer(modifier = Modifier.height(8.dp))
-                
                 // Price
                 Text(
                     "LKR ${booking.pricing.totalAmount.toInt()}",
