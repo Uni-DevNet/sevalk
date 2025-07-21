@@ -227,8 +227,9 @@ fun BookingCard(
                     fontSize = 16.sp,
                     color = Color.Black
                 )
+                // Display provider name instead of booking ID
                 Text(
-                    "Booking ID: ${booking.id.take(8)}",
+                    if (booking.providerName.isNotEmpty()) "Provider: ${booking.providerName}" else "Provider: Not available",
                     fontSize = 14.sp,
                     color = Color.Gray
                 )

@@ -144,6 +144,7 @@ class BookingRepositoryImpl @Inject constructor(
             "id" to booking.id,
             "customerId" to booking.customerId,
             "providerId" to booking.providerId,
+            "providerName" to booking.providerName, // Add this line
             "serviceId" to booking.serviceId,
             "serviceName" to booking.serviceName,
             "description" to booking.description,
@@ -228,6 +229,7 @@ class BookingRepositoryImpl @Inject constructor(
                 id = data["id"] as? String ?: "",
                 customerId = data["customerId"] as? String ?: "",
                 providerId = data["providerId"] as? String ?: "",
+                providerName = data["providerName"] as? String ?: "", // Add this line
                 serviceId = data["serviceId"] as? String ?: "",
                 serviceName = data["serviceName"] as? String ?: "",
                 description = data["description"] as? String ?: "",
@@ -260,6 +262,8 @@ class BookingRepositoryImpl @Inject constructor(
             return Booking(
                 id = data["id"] as? String ?: "",
                 customerId = data["customerId"] as? String ?: "",
+                providerId = data["providerId"] as? String ?: "",
+                providerName = data["providerName"] as? String ?: "", // Add this line
                 serviceName = data["serviceName"] as? String ?: "Unknown Service",
                 status = BookingStatus.PENDING,
                 createdAt = System.currentTimeMillis(),

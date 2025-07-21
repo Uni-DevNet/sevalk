@@ -130,6 +130,7 @@ class BookingViewModel @Inject constructor(
                 val booking = Booking(
                     customerId = currentUserId,
                     providerId = provider.id,
+                    providerName = provider.businessName, // Add provider business name
                     serviceId = selectedServiceObj.id.toString(),
                     serviceName = selectedService,
                     description = description,
