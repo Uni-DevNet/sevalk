@@ -29,9 +29,6 @@ import com.sevalk.data.models.Booking
 import com.sevalk.data.models.BookingStatus
 import java.text.SimpleDateFormat
 import java.util.*
-import com.sevalk.presentation.components.map.ServiceType
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.material3.Icon
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -224,15 +221,6 @@ private fun getBookingStatusInfo(status: BookingStatus): BookingStatusInfo {
     }
 }
 
-private fun getServiceTypeFromName(serviceName: String?): ServiceType {
-    return when (serviceName?.uppercase()) {
-        "PLUMBING" -> ServiceType.PLUMBING
-        "ELECTRICAL", "ELECTRICAL REPAIR" -> ServiceType.ELECTRICAL
-        "CLEANING", "CLEANING (RESIDENTIAL)" -> ServiceType.CLEANING
-        else -> ServiceType.ALL
-    }
-}
-
 @Composable
 fun BookingCard(
     booking: Booking,
@@ -246,7 +234,7 @@ fun BookingCard(
     } catch (e: Exception) {
         "Date not available"
     }
-    val serviceType = getServiceTypeFromName(booking.serviceName)
+    
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -261,13 +249,6 @@ fun BookingCard(
                 .padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Category Icon
-            Icon(
-                imageVector = serviceType.icon,
-                contentDescription = serviceType.displayName,
-                tint = serviceType.color,
-                modifier = Modifier.size(32.dp).padding(end = 12.dp)
-            )
             // Booking Details
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -298,6 +279,7 @@ fun BookingCard(
                     )
                 }
             }
+            
             Column(
                 horizontalAlignment = Alignment.End
             ) {
@@ -314,7 +296,9 @@ fun BookingCard(
                         color = statusInfo.color
                     )
                 }
+                
                 Spacer(modifier = Modifier.height(8.dp))
+                
                 // Price
                 Text(
                     "LKR ${booking.pricing.totalAmount.toInt()}",
