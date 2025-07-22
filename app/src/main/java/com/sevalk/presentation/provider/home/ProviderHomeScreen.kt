@@ -1,6 +1,7 @@
 package com.sevalk.presentation.provider.home
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -34,6 +35,15 @@ import com.google.android.gms.maps.model.LatLng
 import android.location.Geocoder
 import java.util.Locale
 import androidx.compose.runtime.LaunchedEffect
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.runtime.collectAsState
+import com.sevalk.data.models.Booking
+import java.text.SimpleDateFormat
+import java.text.NumberFormat
+import java.util.Date
+import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 
 data class Job(
     val title: String,
@@ -54,17 +64,40 @@ fun getGreeting(): String {
     }
 }
 
+fun formatCurrency(amount: Double): String {
+    return if (amount >= 1000) {
+        "LKR ${NumberFormat.getNumberInstance().format(amount.toLong())}"
+    } else {
+        "LKR ${String.format("%.0f", amount)}"
+    }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ProviderHomeScreen(
     navController: NavController,
-    onSwitchToCustomer: (() -> Unit)? = null
+    onSwitchToCustomer: (() -> Unit)? = null,
+    viewModel: ProviderHomeViewModel = hiltViewModel()
 ) {
     var selectedTab by remember { mutableStateOf(1) } // 1 = My Business selected by default
-    val upcomingJobs = listOf(
-        Job("Plumbing repair", "Customer: John Doe", "Tomorrow, 1:00 PM", "Pending", Icons.Default.Build),
-        Job("Math Tutoring", "Customer: Jane Doe", "Tomorrow, 1:00 PM", "Pending", iconText = "\uD83D\uDCDA")
-    )
+    val uiState by viewModel.uiState.collectAsState()
+    
+    // Pull to refresh setup
+    val pullToRefreshState = rememberPullToRefreshState()
+    
+    // Handle refresh
+    LaunchedEffect(pullToRefreshState.isRefreshing) {
+        if (pullToRefreshState.isRefreshing) {
+            viewModel.refreshData()
+        }
+    }
+    
+    // Stop refreshing when data is loaded
+    LaunchedEffect(uiState.isLoading) {
+        if (!uiState.isLoading && pullToRefreshState.isRefreshing) {
+            pullToRefreshState.endRefresh()
+        }
+    }
 
     val context = LocalContext.current
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
@@ -110,12 +143,61 @@ fun ProviderHomeScreen(
         }
     }
 
-    LazyColumn(
+    Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White)
-            .padding(horizontal = 16.dp)
+            .nestedScroll(pullToRefreshState.nestedScrollConnection)
     ) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.White)
+                .padding(horizontal = 16.dp)
+        ) {
+        item {
+            // Loading State
+            if (uiState.isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(200.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFFFFC107))
+                }
+                return@item
+            }
+
+            // Error State
+            if (uiState.error != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE))
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = "Error loading data",
+                            color = Color(0xFFD32F2F),
+                            fontWeight = FontWeight.Medium
+                        )
+                        Text(
+                            text = uiState.error ?: "Unknown error",
+                            color = Color(0xFFD32F2F),
+                            fontSize = 12.sp
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(onClick = { viewModel.refreshData() }) {
+                            Text("Retry", color = Color(0xFFD32F2F))
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+
         item {
             // Header
             Row(
@@ -205,11 +287,19 @@ fun ProviderHomeScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("3", fontWeight = FontWeight.Bold, fontSize = 24.sp)
+                            Text(
+                                "${uiState.todayBookings}", 
+                                fontWeight = FontWeight.Bold, 
+                                fontSize = 24.sp
+                            )
                             Text("Today's Bookings", color = Color.Gray, fontSize = 12.sp)
                         }
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("LKR 25,250", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                            Text(
+                                formatCurrency(uiState.thisWeekIncome), 
+                                fontWeight = FontWeight.Bold, 
+                                fontSize = 18.sp
+                            )
                             Text("This Week", color = Color.Gray, fontSize = 12.sp)
                         }
                     }
@@ -240,10 +330,60 @@ fun ProviderHomeScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        // Job Cards
-        items(upcomingJobs) { job ->
-            JobCard(job = job)
-            Spacer(modifier = Modifier.height(8.dp))
+        // Show upcoming bookings or empty state
+        if (uiState.upcomingBookings.isEmpty() && !uiState.isLoading && uiState.error == null) {
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF5F5F5))
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "📅",
+                            fontSize = 48.sp
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        Text(
+                            "No upcoming bookings",
+                            fontWeight = FontWeight.Medium,
+                            fontSize = 16.sp,
+                            color = Color.Gray
+                        )
+                        Text(
+                            "New booking requests will appear here when customers book your services",
+                            fontSize = 14.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 16.dp)
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                        com.sevalk.presentation.components.common.PrimaryButton(
+                            text = "Refresh",
+                            onClick = { viewModel.refreshData() },
+                            style = com.sevalk.presentation.components.common.PrimaryButtonStyle.OUTLINE,
+                            modifier = Modifier.fillMaxWidth(0.6f)
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        } else {
+            // Job Cards from bookings
+            items(uiState.upcomingBookings) { booking ->
+                BookingJobCard(
+                    booking = booking,
+                    onBookingClick = { bookingId ->
+                        // Navigate to booking details or show bottom sheet
+                        // For now, you can add navigation to booking details
+                    }
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
         }
 
         item {
@@ -274,18 +414,20 @@ fun ProviderHomeScreen(
                     ) {
                         Column {
                             Text(
-                                "4.8",
+                                if (uiState.providerRating > 0) 
+                                    String.format("%.1f", uiState.providerRating) 
+                                else "0.0",
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 24.sp,
                                 color = Color.Black
                             )
                             Text(
-                                "⭐⭐⭐⭐⭐",
+                                if (uiState.providerRating > 0) "⭐⭐⭐⭐⭐" else "Getting started",
                                 fontSize = 12.sp
                             )
                         }
                         Text(
-                            "57 complete jobs",
+                            "${uiState.totalCompleteJobs} complete jobs",
                             color = Color.Gray,
                             fontSize = 12.sp
                         )
@@ -294,8 +436,13 @@ fun ProviderHomeScreen(
                     Spacer(modifier = Modifier.height(12.dp))
                     
                     // Progress Bar
+                    val progressValue = if (uiState.totalCompleteJobs > 0) {
+                        (uiState.totalCompleteJobs.toFloat() / (uiState.totalCompleteJobs + 10).toFloat())
+                    } else {
+                        0f
+                    }
                     LinearProgressIndicator(
-                        progress = 0.8f,
+                        progress = progressValue,
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(6.dp)
@@ -304,6 +451,122 @@ fun ProviderHomeScreen(
                         trackColor = Color(0xFFE0E0E0)
                     )
                 }
+            }
+        }
+    } // End LazyColumn
+        
+        // Pull to refresh indicator
+        PullToRefreshContainer(
+            modifier = Modifier.align(Alignment.TopCenter),
+            state = pullToRefreshState,
+        )
+    } // End Box
+}
+
+@Composable
+fun BookingJobCard(
+    booking: Booking, 
+    onBookingClick: ((String) -> Unit)? = null
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .then(
+                if (onBookingClick != null) {
+                    Modifier.clickable { onBookingClick(booking.id) }
+                } else {
+                    Modifier
+                }
+            ),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Service Icon based on service name
+            Box(
+                modifier = Modifier
+                    .size(40.dp)
+                    .background(Color(0xFFF5F5F5), CircleShape),
+                contentAlignment = Alignment.Center
+            ) {
+                val icon = when {
+                    booking.serviceName.lowercase().contains("plumb") -> "🔧"
+                    booking.serviceName.lowercase().contains("tutor") || 
+                    booking.serviceName.lowercase().contains("teach") -> "📚"
+                    booking.serviceName.lowercase().contains("clean") -> "🧹"
+                    booking.serviceName.lowercase().contains("electric") -> "⚡"
+                    booking.serviceName.lowercase().contains("paint") -> "🎨"
+                    booking.serviceName.lowercase().contains("garden") -> "🌱"
+                    booking.serviceName.lowercase().contains("repair") -> "🔨"
+                    else -> "🛠️"
+                }
+                Text(
+                    icon,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center
+                )
+            }
+            
+            Spacer(modifier = Modifier.width(12.dp))
+            
+            // Job Details
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    booking.serviceName,
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 14.sp,
+                    color = Color.Black
+                )
+                Text(
+                    "Customer: ${booking.customerName}",
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+                val dateFormat = SimpleDateFormat("MMM dd, hh:mm a", Locale.getDefault())
+                val scheduledDateTime = if (booking.scheduledDate > 0) {
+                    try {
+                        val date = Date(booking.scheduledDate)
+                        dateFormat.format(date)
+                    } catch (e: Exception) {
+                        booking.scheduledTime.ifEmpty { "Time TBD" }
+                    }
+                } else {
+                    booking.scheduledTime.ifEmpty { "Time TBD" }
+                }
+                Text(
+                    scheduledDateTime,
+                    color = Color.Gray,
+                    fontSize = 12.sp
+                )
+            }
+            
+            // Status Badge
+            val (statusColor, statusBgColor) = when (booking.status) {
+                com.sevalk.data.models.BookingStatus.PENDING -> Pair(Color(0xFFB8860B), Color(0xFFFFF3CD))
+                com.sevalk.data.models.BookingStatus.ACCEPTED -> Pair(Color(0xFF1976D2), Color(0xFFE3F2FD))
+                com.sevalk.data.models.BookingStatus.CONFIRMED -> Pair(Color(0xFF388E3C), Color(0xFFE8F5E8))
+                com.sevalk.data.models.BookingStatus.IN_PROGRESS -> Pair(Color(0xFFF57C00), Color(0xFFFFF3E0))
+                else -> Pair(Color(0xFF616161), Color(0xFFF5F5F5))
+            }
+            
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = statusBgColor
+            ) {
+                Text(
+                    booking.status.name.lowercase().replaceFirstChar { it.uppercase() }
+                        .replace("_", " "),
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    color = statusColor,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
+                )
             }
         }
     }
