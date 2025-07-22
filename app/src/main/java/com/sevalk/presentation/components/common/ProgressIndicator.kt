@@ -69,7 +69,7 @@ fun ProgressIndicator(
                     if (step < currentStep) {
                         // Checkmark for completed steps
                         Icon(
-                            painter = painterResource(id = R.drawable.check1),
+                            painter = painterResource(id = R.drawable.check),
                             contentDescription = "Completed",
                             tint = Color.White,
                             modifier = Modifier.size(12.dp)

@@ -88,14 +88,14 @@ class LoginViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { user ->
                         Timber.d("Login successful for user: ${user.uid}")
-                        // Refresh auth state to trigger navigation
-                        authStateManager.refreshAuthState()
                         _uiState.update { 
                             it.copy(
                                 isLoading = false,
                                 errorMessage = null
                             ) 
                         }
+                        // Handle successful authentication to trigger proper navigation
+                        authStateManager.handleSuccessfulAuthentication()
                         onSuccess()
                     },
                     onFailure = { exception ->
@@ -167,8 +167,8 @@ class LoginViewModel @Inject constructor(
                                 val userDataResult = authRepository.getUserData(user.uid)
                                 userDataResult.fold(
                                     onSuccess = { userData ->
-                                        // User exists, refresh auth state
-                                        authStateManager.refreshAuthState()
+                                        // User exists, handle successful authentication
+                                        authStateManager.handleSuccessfulAuthentication()
                                         _uiState.update { it.copy(isLoading = false, errorMessage = null) }
                                         onLoginSuccess()
                                     },

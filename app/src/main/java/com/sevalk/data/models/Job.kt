@@ -31,9 +31,10 @@ fun Booking.toJobTimeAgo(): String {
 // Convert BookingStatus to JobStatus for backward compatibility
 fun BookingStatus.toJobStatus(): JobStatus = when (this) {
     BookingStatus.PENDING -> JobStatus.NEW
-    BookingStatus.ACCEPTED, BookingStatus.CONFIRMED, BookingStatus.IN_PROGRESS -> JobStatus.ACCEPTED
+    BookingStatus.ACCEPTED, BookingStatus.CONFIRMED -> JobStatus.ACCEPTED
     BookingStatus.COMPLETED -> JobStatus.DONE
-    BookingStatus.REJECTED, BookingStatus.CANCELLED, BookingStatus.DISPUTED, BookingStatus.REFUNDED -> JobStatus.UNPAID
+    BookingStatus.IN_PROGRESS -> JobStatus.UNPAID
+    BookingStatus.REJECTED, BookingStatus.CANCELLED, BookingStatus.DISPUTED, BookingStatus.REFUNDED -> JobStatus.NEW
 }
 
 // Convert JobStatus to BookingStatus
@@ -41,7 +42,7 @@ fun JobStatus.toBookingStatus(): BookingStatus = when (this) {
     JobStatus.NEW -> BookingStatus.PENDING
     JobStatus.ACCEPTED -> BookingStatus.ACCEPTED
     JobStatus.DONE -> BookingStatus.COMPLETED
-    JobStatus.UNPAID -> BookingStatus.CANCELLED
+    JobStatus.UNPAID -> BookingStatus.IN_PROGRESS
 }
 
 enum class JobStatus {

@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -32,12 +33,7 @@ import com.sevalk.data.models.toJobDistance
 import com.sevalk.data.models.toJobTime
 import com.sevalk.data.models.toJobTimeAgo
 import com.sevalk.data.models.toJobTitle
-import com.sevalk.data.models.toJobDate
-import com.sevalk.data.models.toJobDescription
-import com.sevalk.data.models.toJobDistance
-import com.sevalk.data.models.toJobTime
-import com.sevalk.data.models.toJobTimeAgo
-import com.sevalk.data.models.toJobTitle
+import com.sevalk.presentation.components.CustomerAvatar
 import com.sevalk.ui.theme.S_LIGHT_BLACK
 import com.sevalk.ui.theme.S_STROKE_COLOR
 import com.sevalk.ui.theme.S_YELLOW
@@ -50,6 +46,7 @@ fun JobCard(
     onQuickAccept: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -66,12 +63,10 @@ fun JobCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Avatar placeholder
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color.Gray.copy(alpha = 0.3f))
+                    // Customer Avatar using the reusable component
+                    CustomerAvatar(
+                        customerId = booking.customerId,
+                        size = 40.dp
                     )
                     
                     Spacer(modifier = Modifier.width(12.dp))
@@ -223,6 +218,7 @@ fun JobCardPreview() {
     JobCard(
         booking = Booking(
             id = "1",
+            customerId = "sample_customer_id", // Add customerId for proper functionality
             customerName = "Sarah Johnson",
             serviceName = "Kitchen Plumbing Repair",
             description = "Kitchen sink is leaking from the pipes underneath. Water...",

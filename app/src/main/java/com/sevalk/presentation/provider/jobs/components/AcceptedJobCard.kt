@@ -22,6 +22,7 @@ import com.sevalk.data.models.toJobDescription
 import com.sevalk.data.models.toJobDistance
 import com.sevalk.data.models.toJobTime
 import com.sevalk.data.models.toJobTitle
+import com.sevalk.presentation.components.CustomerAvatar
 import com.sevalk.ui.theme.S_BLUE
 import com.sevalk.ui.theme.S_BLUE_BACKGROUND
 import com.sevalk.ui.theme.S_YELLOW
@@ -48,11 +49,10 @@ fun AcceptedJobCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Customer avatar placeholder
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+                    // Customer Avatar using the reusable component
+                    CustomerAvatar(
+                        customerId = booking.customerId ?: "",
+                        size = 40.dp
                     )
                     
                     Spacer(modifier = Modifier.width(12.dp))
@@ -187,6 +187,7 @@ fun AcceptedJobCardPreview() {
     AcceptedJobCard(
         booking = Booking(
             id = "1",
+            customerId = "sample_customer_id", // Added for CustomerAvatar functionality
             customerName = "Sarah Johnson",
             serviceName = "Kitchen Plumbing Repair",
             description = "Kitchen sink is leaking from the pipes underneath. Water...",

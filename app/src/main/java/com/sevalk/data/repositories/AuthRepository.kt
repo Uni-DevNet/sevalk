@@ -48,6 +48,7 @@ interface AuthRepository {
     suspend fun registerServiceProvider(email: String, password: String, fullName: String, userType: UserType): Result<FirebaseUser>
     suspend fun updateServiceProviderServices(providerId: String, services: List<Service>): Result<Unit>
     suspend fun updateServiceProviderLocation(providerId: String, serviceLocation: ServiceLocation, serviceRadius: Double): Result<Unit>
+    suspend fun getServiceProviderServices(providerId: String): Result<List<Service>>
 }
 
 class AuthRepositoryImpl @Inject constructor(
@@ -425,6 +426,33 @@ class AuthRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to update service provider location")
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun getServiceProviderServices(providerId: String): Result<List<Service>> {
+        return try {
+            val document = firestore.collection(Constants.COLLECTION_SERVICE_PROVIDERS)
+                .document(providerId)
+                .get()
+                .await()
+            
+            if (document.exists()) {
+                val data = document.data
+                val servicesData = data?.get("services") as? List<Map<String, Any>> ?: emptyList()
+                
+                val services = servicesData.mapNotNull { serviceData ->
+                    Service.fromMap(serviceData)
+                }
+                
+                Timber.d("Retrieved ${services.size} services for provider: $providerId")
+                Result.success(services)
+            } else {
+                Timber.w("Service provider not found: $providerId")
+                Result.success(emptyList())
+            }
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get service provider services")
             Result.failure(e)
         }
     }
