@@ -32,4 +32,12 @@ class AuthViewModel @Inject constructor(
     fun refreshAuthState() {
         authStateManager.refreshAuthState()
     }
+    
+    fun handleSuccessfulAuthentication() {
+        authStateManager.handleSuccessfulAuthentication()
+    }
+    
+    fun handleNewUserSignUp() {
+        authStateManager.handleNewUserSignUp()
+    }
 }

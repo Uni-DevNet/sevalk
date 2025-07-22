@@ -73,10 +73,23 @@ fun HomeScreen(
     onServiceSelected: ((com.sevalk.presentation.components.map.ServiceType) -> Unit)? = null,
     modifier: Modifier = Modifier,
     myBookingsViewModel: MyBookingsViewModel = hiltViewModel(),
-    serviceProviders: List<ServiceProvider> = emptyList()
+    serviceProviders: List<ServiceProvider> = emptyList(),
+    serviceProviderCheckViewModel: ServiceProviderCheckViewModel = hiltViewModel()
 ) {
     var searchQuery by remember { mutableStateOf("") }
     var showAllBookings by remember { mutableStateOf(false) }
+
+    // Service provider check state
+    val serviceProviderCheckState by serviceProviderCheckViewModel.uiState.collectAsState()
+
+    // Handle service provider account creation completion
+    LaunchedEffect(serviceProviderCheckState.serviceProviderCreated) {
+        if (serviceProviderCheckState.serviceProviderCreated) {
+            // Navigate to service selection screen
+            navController.navigate(Screen.ServiceSelection.route)
+            serviceProviderCheckViewModel.resetState()
+        }
+    }
 
     // Sample data with only confirmed available Material Icons
     val popularServices = listOf(
@@ -111,8 +124,18 @@ fun HomeScreen(
                 val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
                 if (!addresses.isNullOrEmpty()) {
                     val address = addresses[0]
-                    val addressLine = address.getAddressLine(0)
-                    currentAddress = addressLine
+
+                    // Get city and country
+                    val city = address.locality ?: address.subAdminArea ?: address.adminArea
+                    val country = address.countryName
+
+                    // Format as "City, Country"
+                    currentAddress = when {
+                        city != null && country != null -> "$city, $country"
+                        country != null -> country
+                        city != null -> city
+                        else -> null
+                    }
                 } else {
                     currentAddress = null
                 }
@@ -182,7 +205,8 @@ fun HomeScreen(
             PrimaryButton(
                 text = "My Business",
                 onClick = {
-                    onSwitchToProvider?.invoke()
+                    // Check if user has service provider account
+                    serviceProviderCheckViewModel.checkServiceProviderAccount()
                 },
                 modifier = Modifier.weight(1f),
                 style = PrimaryButtonStyle.OUTLINE,
@@ -347,6 +371,35 @@ fun HomeScreen(
         }
 
         Spacer(modifier = Modifier.height(16.dp))
+    }
+
+    // Show join as provider dialog
+    if (serviceProviderCheckState.showJoinDialog) {
+        JoinAsProviderDialog(
+            isLoading = serviceProviderCheckState.isLoading,
+            onJoinClick = {
+                serviceProviderCheckViewModel.createServiceProviderAccount()
+            },
+            onDismiss = {
+                serviceProviderCheckViewModel.dismissJoinDialog()
+            }
+        )
+    }
+
+    // Handle existing service provider account - switch to provider mode
+    LaunchedEffect(serviceProviderCheckState.hasServiceProviderAccount) {
+        if (serviceProviderCheckState.hasServiceProviderAccount == true && !serviceProviderCheckState.showJoinDialog) {
+            onSwitchToProvider?.invoke()
+        }
+    }
+
+    // Handle errors
+    serviceProviderCheckState.error?.let { error ->
+        LaunchedEffect(error) {
+            // You can show a snackbar or toast here
+            // For now, we'll just log the error
+            serviceProviderCheckViewModel.clearError()
+        }
     }
 }
 

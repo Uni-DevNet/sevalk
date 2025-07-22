@@ -51,7 +51,7 @@ fun MyBookingsScreen(
                 it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.CONFIRMED 
             }
             "Unpaid" -> bookings.filter { 
-                it.status == BookingStatus.COMPLETED 
+                it.status == BookingStatus.IN_PROGRESS
             }
             "Completed" -> bookings.filter { 
                 it.status == BookingStatus.COMPLETED 

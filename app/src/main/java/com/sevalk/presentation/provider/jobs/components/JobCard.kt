@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.RemoveRedEye
 import androidx.compose.material.icons.filled.Schedule
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,8 +24,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sevalk.data.models.Job
+import com.sevalk.data.models.Booking
+import com.sevalk.data.models.BookingStatus
 import com.sevalk.data.models.JobStatus
+import com.sevalk.data.models.toJobDate
+import com.sevalk.data.models.toJobDescription
+import com.sevalk.data.models.toJobDistance
+import com.sevalk.data.models.toJobTime
+import com.sevalk.data.models.toJobTimeAgo
+import com.sevalk.data.models.toJobTitle
+import com.sevalk.presentation.components.CustomerAvatar
 import com.sevalk.ui.theme.S_LIGHT_BLACK
 import com.sevalk.ui.theme.S_STROKE_COLOR
 import com.sevalk.ui.theme.S_YELLOW
@@ -32,11 +41,12 @@ import com.sevalk.ui.theme.S_YELLOW
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobCard(
-    job: Job,
+    booking: Booking,
     onViewDetails: () -> Unit,
     onQuickAccept: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -53,19 +63,17 @@ fun JobCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Avatar placeholder
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(Color.Gray.copy(alpha = 0.3f))
+                    // Customer Avatar using the reusable component
+                    CustomerAvatar(
+                        customerId = booking.customerId,
+                        size = 40.dp
                     )
                     
                     Spacer(modifier = Modifier.width(12.dp))
                     
                     Column {
                         Text(
-                            text = job.clientName,
+                            text = booking.customerName,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp
                         )
@@ -79,7 +87,7 @@ fun JobCard(
                             )
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
-                                text = job.clientRating.toString(),
+                                text = "4.8", // Static rating for now, can be added to Booking model later
                                 fontSize = 14.sp,
                                 color = Color.Gray
                             )
@@ -88,7 +96,7 @@ fun JobCard(
                 }
                 
                 Text(
-                    text = job.timeAgo,
+                    text = booking.toJobTimeAgo(),
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -98,7 +106,7 @@ fun JobCard(
             
             // Job title and description
             Text(
-                text = job.title,
+                text = booking.toJobTitle(),
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp
             )
@@ -106,7 +114,7 @@ fun JobCard(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = job.description,
+                text = booking.toJobDescription(),
                 fontSize = 14.sp,
                 color = Color.Gray,
                 maxLines = 2,
@@ -122,15 +130,15 @@ fun JobCard(
             ) {
                 JobDetailItem(
                     icon = Icons.Default.DateRange,
-                    text = job.date
+                    text = booking.toJobDate()
                 )
                 JobDetailItem(
                     icon = Icons.Default.Schedule,
-                    text = job.time
+                    text = booking.toJobTime()
                 )
                 JobDetailItem(
                     icon = Icons.Default.LocationOn,
-                    text = job.distance
+                    text = booking.toJobDistance()
                 )
             }
             
@@ -208,17 +216,16 @@ fun JobDetailItem(
 @Composable
 fun JobCardPreview() {
     JobCard(
-        job = Job(
+        booking = Booking(
             id = "1",
-            clientName = "Sarah Johnson",
-            clientRating = 4.8f,
-            title = "Kitchen Plumbing Repair",
+            customerId = "sample_customer_id", // Add customerId for proper functionality
+            customerName = "Sarah Johnson",
+            serviceName = "Kitchen Plumbing Repair",
             description = "Kitchen sink is leaking from the pipes underneath. Water...",
-            date = "2025-06-07",
-            time = "10:00 AM",
-            distance = "1.2 km",
-            timeAgo = "2 hours ago",
-            status = JobStatus.ACCEPTED
+            scheduledDate = System.currentTimeMillis() + (24 * 60 * 60 * 1000), // Tomorrow
+            scheduledTime = "10:00 AM",
+            status = com.sevalk.data.models.BookingStatus.ACCEPTED,
+            createdAt = System.currentTimeMillis() - (2 * 60 * 60 * 1000) // 2 hours ago
         ),
         onViewDetails = {},
         onQuickAccept = {}

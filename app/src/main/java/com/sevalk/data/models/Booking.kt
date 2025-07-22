@@ -5,6 +5,7 @@ data class Booking(
     val customerId: String = "",
     val providerId: String = "",
     val providerName: String = "", // Add this field to store provider business name
+    val customerName: String = "",
     val serviceId: String = "",
     val serviceName: String = "",
     val description: String = "",

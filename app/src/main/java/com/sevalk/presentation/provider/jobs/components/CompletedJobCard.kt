@@ -12,13 +12,21 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sevalk.data.models.Job
+import com.sevalk.data.models.Booking
+import com.sevalk.data.models.BookingStatus
+import com.sevalk.data.models.toJobDate
+import com.sevalk.data.models.toJobDescription
+import com.sevalk.data.models.toJobDistance
+import com.sevalk.data.models.toJobTime
+import com.sevalk.data.models.toJobTitle
+import com.sevalk.presentation.components.CustomerAvatar
 
 @Composable
 fun CompletedJobCard(
-    job: Job,
+    booking: Booking,
     onViewDetails: () -> Unit
 ) {
     Card(
@@ -37,18 +45,17 @@ fun CompletedJobCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    // Customer avatar placeholder
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(Color.Gray.copy(alpha = 0.2f), RoundedCornerShape(20.dp))
+                    // Customer Avatar using the reusable component
+                    CustomerAvatar(
+                        customerId = booking.customerId ?: "",
+                        size = 40.dp
                     )
                     
                     Spacer(modifier = Modifier.width(12.dp))
                     
                     Column {
                         Text(
-                            text = job.clientName,
+                            text = booking.customerName,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 16.sp
                         )
@@ -58,7 +65,7 @@ fun CompletedJobCard(
                                 fontSize = 12.sp
                             )
                             Text(
-                                text = job.clientRating.toString(),
+                                text = "4.8", // Static rating for now
                                 fontSize = 12.sp,
                                 color = Color.Gray,
                                 modifier = Modifier.padding(start = 4.dp)
@@ -86,14 +93,14 @@ fun CompletedJobCard(
             
             // Job title
             Text(
-                text = job.title,
+                text = booking.toJobTitle(),
                 fontWeight = FontWeight.SemiBold,
                 fontSize = 14.sp
             )
             
             // Job description
             Text(
-                text = job.description,
+                text = booking.toJobDescription(),
                 color = Color.Gray,
                 fontSize = 14.sp,
                 modifier = Modifier.padding(vertical = 4.dp)
@@ -108,20 +115,20 @@ fun CompletedJobCard(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text(
-                        text = "📅 ${job.date}",
+                        text = "📅 ${booking.toJobDate()}",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     Text(
-                        text = "🕒 ${job.time}",
+                        text = "🕒 ${booking.toJobTime()}",
                         fontSize = 12.sp,
                         color = Color.Gray
                     )
                 }
                 
                 Text(
-                    text = "📍 ${job.distance}",
+                    text = "📍 ${booking.toJobDistance()}",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )
@@ -154,4 +161,23 @@ fun CompletedJobCard(
             }
         }
     }
+}
+
+@Preview
+@Composable
+fun CompletedJobCardPreview() {
+    CompletedJobCard(
+        booking = Booking(
+            id = "1",
+            customerId = "sample_customer_id", // Added for CustomerAvatar functionality
+            customerName = "Sarah Johnson",
+            serviceName = "Kitchen Plumbing Repair",
+            description = "Kitchen sink is leaking from the pipes underneath. Water...",
+            scheduledDate = System.currentTimeMillis() - (24 * 60 * 60 * 1000), // Yesterday (completed)
+            scheduledTime = "10:00 AM",
+            status = BookingStatus.COMPLETED,
+            createdAt = System.currentTimeMillis() - (48 * 60 * 60 * 1000) // 2 days ago
+        ),
+        onViewDetails = {}
+    )
 }

@@ -8,8 +8,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
-import com.sevalk.data.models.Job
+import androidx.hilt.navigation.compose.hiltViewModel
+import com.sevalk.data.models.Booking
 import com.sevalk.presentation.provider.jobs.components.JobsHeader
 import com.sevalk.presentation.provider.jobs.components.AcceptedJobsSection
 import com.sevalk.presentation.provider.jobs.components.DoneJobsSection
@@ -21,12 +21,12 @@ import com.sevalk.ui.theme.SevaLKTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobsScreen(
-    viewModel: JobsViewModel = viewModel(),
-    onNavigateToCreateBill: (Job) -> Unit = {}
+    viewModel: JobsViewModel = hiltViewModel(),
+    onNavigateToCreateBill: (Booking) -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     var showBottomSheet by remember { mutableStateOf(false) }
-    var selectedJob by remember { mutableStateOf<Job?>(null) }
+    var selectedBooking by remember { mutableStateOf<Booking?>(null) }
     
     Box(modifier = Modifier.fillMaxSize()) {
         // Main content
@@ -44,66 +44,103 @@ fun JobsScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Conditional content based on filter
-            when (state.currentFilter) {
-                JobStatus.ACCEPTED -> {
-                    AcceptedJobsSection(
-                        todaysEarnings = state.todaysEarnings,
-                        jobsToday = state.jobsToday,
-                        jobs = state.jobs,
-                        onViewDetails = { jobId ->
-                            selectedJob = state.jobs.find { it.id == jobId }
-                            showBottomSheet = true
-                        },
-                        onCreateBill = { jobId -> 
-                            state.jobs.find { it.id == jobId }?.let { job ->
-                                onNavigateToCreateBill(job)
+            // Show loading indicator
+            if (state.isLoading) {
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = Color(0xFFFFC107))
+                }
+            } else if (state.bookings.isEmpty()) {
+                // Empty state
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = androidx.compose.ui.Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = when (state.currentFilter) {
+                                JobStatus.NEW -> "No new job requests"
+                                JobStatus.ACCEPTED -> "No accepted jobs"
+                                JobStatus.DONE -> "No completed jobs"
+                                JobStatus.UNPAID -> "No jobs in progress"
+                            },
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = Color.Gray
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        TextButton(
+                            onClick = { viewModel.refreshBookings() }
+                        ) {
+                            Text("Refresh", color = Color(0xFFFFC107))
+                        }
+                    }
+                }
+            } else {
+                // Conditional content based on filter
+                when (state.currentFilter) {
+                    JobStatus.ACCEPTED -> {
+                        AcceptedJobsSection(
+                            todaysEarnings = state.todaysEarnings,
+                            jobsToday = state.jobsToday,
+                            bookings = state.bookings,
+                            onViewDetails = { bookingId ->
+                                selectedBooking = state.bookings.find { it.id == bookingId }
+                                showBottomSheet = true
+                            },
+                            onCreateBill = { bookingId -> 
+                                state.bookings.find { it.id == bookingId }?.let { booking ->
+                                    onNavigateToCreateBill(booking)
+                                }
                             }
-                        }
-                    )
-                }
-                JobStatus.DONE -> {
-                    DoneJobsSection(
-                        jobs = state.jobs,
-                        onViewDetails = { jobId ->
-                            selectedJob = state.jobs.find { it.id == jobId }
-                            showBottomSheet = true
-                        }
-                    )
-                }
-                else -> {
-                    DefaultJobsSection(
-                        jobs = state.jobs,
-                        onViewDetails = { jobId ->
-                            selectedJob = state.jobs.find { it.id == jobId }
-                            showBottomSheet = true
-                        },
-                        onQuickAccept = { jobId -> viewModel.onAcceptJob(jobId) }
-                    )
+                        )
+                    }
+                    JobStatus.DONE -> {
+                        DoneJobsSection(
+                            bookings = state.bookings,
+                            onViewDetails = { bookingId ->
+                                selectedBooking = state.bookings.find { it.id == bookingId }
+                                showBottomSheet = true
+                            }
+                        )
+                    }
+                    else -> {
+                        DefaultJobsSection(
+                            bookings = state.bookings,
+                            onViewDetails = { bookingId ->
+                                selectedBooking = state.bookings.find { it.id == bookingId }
+                                showBottomSheet = true
+                            },
+                            onQuickAccept = { bookingId -> viewModel.onAcceptBooking(bookingId) }
+                        )
+                    }
                 }
             }
         }
         
-        // Show bottom sheet when job is selected
-        selectedJob?.let { job ->
+        // Show bottom sheet when booking is selected
+        selectedBooking?.let { booking ->
             if (showBottomSheet) {
                 JobDetailsBottomSheet(
-                    job = job,
+                    booking = booking,
                     onDismiss = { 
                         showBottomSheet = false
-                        selectedJob = null
+                        selectedBooking = null
                     },
                     onCall = { /* Handle call */ },
                     onMessage = { /* Handle message */ },
                     onDecline = { 
-                        /* Handle decline */
+                        viewModel.onDeclineBooking(booking.id)
                         showBottomSheet = false
-                        selectedJob = null
+                        selectedBooking = null
                     },
                     onAccept = { 
-                        viewModel.onAcceptJob(job.id)
+                        viewModel.onAcceptBooking(booking.id)
                         showBottomSheet = false
-                        selectedJob = null
+                        selectedBooking = null
                     }
                 )
             }

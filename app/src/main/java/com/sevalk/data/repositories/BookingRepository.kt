@@ -16,7 +16,9 @@ interface BookingRepository {
     suspend fun createBooking(booking: Booking): Result<String>
     suspend fun getBookingById(bookingId: String): Result<Booking?>
     suspend fun updateBookingStatus(bookingId: String, status: BookingStatus): Result<Unit>
+    suspend fun updateBookingPricing(bookingId: String, pricing: BookingPricing): Result<Unit>
     suspend fun getBookingsByCustomerId(customerId: String): Result<List<Booking>>
+    suspend fun getBookingsByProviderId(providerId: String): Result<List<Booking>>
     suspend fun getProviderById(providerId: String): Result<Map<String, Any>?>
 }
 
@@ -100,6 +102,41 @@ class BookingRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun updateBookingPricing(bookingId: String, pricing: BookingPricing): Result<Unit> {
+        return try {
+            val updates = mapOf(
+                "pricing" to mapOf(
+                    "basePrice" to pricing.basePrice,
+                    "additionalCharges" to pricing.additionalCharges.map { charge ->
+                        mapOf(
+                            "description" to charge.description,
+                            "amount" to charge.amount,
+                            "isApproved" to charge.isApproved
+                        )
+                    },
+                    "discount" to pricing.discount,
+                    "travelFee" to pricing.travelFee,
+                    "tax" to pricing.tax,
+                    "totalAmount" to pricing.totalAmount,
+                    "paidAmount" to pricing.paidAmount,
+                    "paymentStatus" to pricing.paymentStatus.name
+                ),
+                "updatedAt" to System.currentTimeMillis()
+            )
+            
+            firestore.collection(Constants.COLLECTION_BOOKINGS)
+                .document(bookingId)
+                .update(updates)
+                .await()
+            
+            Timber.d("Booking pricing updated successfully for booking: $bookingId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to update booking pricing")
+            Result.failure(e)
+        }
+    }
+    
     override suspend fun getBookingsByCustomerId(customerId: String): Result<List<Booking>> {
         return try {
             val querySnapshot = firestore.collection(Constants.COLLECTION_BOOKINGS)
@@ -117,6 +154,27 @@ class BookingRepositoryImpl @Inject constructor(
             Result.success(bookings)
         } catch (e: Exception) {
             Timber.e(e, "Failed to get bookings for customer: $customerId")
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun getBookingsByProviderId(providerId: String): Result<List<Booking>> {
+        return try {
+            val querySnapshot = firestore.collection(Constants.COLLECTION_BOOKINGS)
+                .whereEqualTo("providerId", providerId)
+                .get()
+                .await()
+            
+            val bookings = querySnapshot.documents.mapNotNull { document ->
+                document.data?.let { data ->
+                    mapToBooking(data)
+                }
+            }.sortedByDescending { it.createdAt } // Sort on client side by creation date
+            
+            Timber.d("Retrieved ${bookings.size} bookings for provider: $providerId")
+            Result.success(bookings)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get bookings for provider: $providerId")
             Result.failure(e)
         }
     }
@@ -146,6 +204,7 @@ class BookingRepositoryImpl @Inject constructor(
             "providerId" to booking.providerId,
             "providerName" to booking.providerName, // Add this line
             "serviceId" to booking.serviceId,
+            "customerName" to booking.customerName,
             "serviceName" to booking.serviceName,
             "description" to booking.description,
             "serviceLocation" to mapOf(
@@ -230,6 +289,7 @@ class BookingRepositoryImpl @Inject constructor(
                 customerId = data["customerId"] as? String ?: "",
                 providerId = data["providerId"] as? String ?: "",
                 providerName = data["providerName"] as? String ?: "", // Add this line
+                customerName = data["customerName"] as? String ?: "",
                 serviceId = data["serviceId"] as? String ?: "",
                 serviceName = data["serviceName"] as? String ?: "",
                 description = data["description"] as? String ?: "",
