@@ -27,6 +27,7 @@ data class ServiceProvider(
     val province: String = "",
     val latitude: Double = 0.0,
     val longitude: Double = 0.0,
+    val profileImageUrl : String = "",
     val serviceLocation: ServiceLocation = ServiceLocation()
 ) {
     companion object {

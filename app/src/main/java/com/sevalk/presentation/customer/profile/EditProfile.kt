@@ -121,31 +121,49 @@ fun EditProfilePopup(
                 // Action Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.End
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    TextButton(
+                    Button(
                         onClick = onDismiss,
-                        modifier = Modifier.padding(end = 16.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .height(48.dp)
+                            .weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color.White,
+                            contentColor = Color.Black
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
                     ) {
                         Text(
                             "Cancel",
-                            color = Color.Gray,
-                            fontSize = 16.sp
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
                         )
                     }
 
                     Button(
                         onClick = { onSave(fullName, phoneNumber) },
                         shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .height(48.dp)
+                            .weight(2f),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = YellowHighlight,
                             contentColor = Color.Black
-                        )
+                        ),
+                        elevation = ButtonDefaults.buttonElevation(
+                            defaultElevation = 2.dp,
+                            pressedElevation = 4.dp
+                        ),
+                        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
                     ) {
                         Text(
                             "Save Changes",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.SemiBold
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1
                         )
                     }
                 }
