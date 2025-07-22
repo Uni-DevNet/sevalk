@@ -49,6 +49,8 @@ interface AuthRepository {
     suspend fun updateServiceProviderServices(providerId: String, services: List<Service>): Result<Unit>
     suspend fun updateServiceProviderLocation(providerId: String, serviceLocation: ServiceLocation, serviceRadius: Double): Result<Unit>
     suspend fun getServiceProviderServices(providerId: String): Result<List<Service>>
+    suspend fun checkServiceProviderExists(userId: String): Result<Boolean>
+    suspend fun createServiceProviderFromCustomer(userId: String): Result<Unit>
 }
 
 class AuthRepositoryImpl @Inject constructor(
@@ -453,6 +455,66 @@ class AuthRepositoryImpl @Inject constructor(
             }
         } catch (e: Exception) {
             Timber.e(e, "Failed to get service provider services")
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun checkServiceProviderExists(userId: String): Result<Boolean> {
+        return try {
+            val document = firestore.collection(Constants.COLLECTION_SERVICE_PROVIDERS)
+                .document(userId)
+                .get()
+                .await()
+            
+            val exists = document.exists()
+            Timber.d("Service provider exists for user $userId: $exists")
+            Result.success(exists)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to check if service provider exists")
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun createServiceProviderFromCustomer(userId: String): Result<Unit> {
+        return try {
+            // Get user details from users collection
+            val userDocument = firestore.collection(Constants.COLLECTION_USERS)
+                .document(userId)
+                .get()
+                .await()
+            
+            if (!userDocument.exists()) {
+                return Result.failure(Exception("User not found"))
+            }
+            
+            val userData = userDocument.data!!
+            val userName = userData["displayName"] as? String ?: "Unknown User"
+            val userEmail = userData["email"] as? String ?: ""
+            
+            // Create ServiceProvider object for service providers collection
+            val serviceProvider = ServiceProvider(
+                id = userId,
+                userId = userId,
+                businessName = userName, // Initially set to user's display name
+                description = "",
+                status = ProviderStatus.PENDING,
+                createdAt = System.currentTimeMillis(),
+                updatedAt = System.currentTimeMillis()
+            )
+            
+            // Convert ServiceProvider object to Map using companion function
+            val serviceProviderData = ServiceProvider.toMap(serviceProvider)
+            
+            // Save ServiceProvider to service providers collection
+            firestore.collection(Constants.COLLECTION_SERVICE_PROVIDERS)
+                .document(userId)
+                .set(serviceProviderData)
+                .await()
+            
+            Timber.d("Service provider account created for user: $userId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to create service provider from customer")
             Result.failure(e)
         }
     }
