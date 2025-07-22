@@ -214,7 +214,8 @@ fun MainNavigation(
                     CustomerNavigationTab.SEARCH -> {
                         ServiceProviderMapScreen(
                             navController = navController,
-                            initialServiceType = selectedServiceType
+                            initialServiceType = selectedServiceType,
+                            onNavigateToMessages = { customerSelectedTab = CustomerNavigationTab.MESSAGES }
                         )
                     }
                     CustomerNavigationTab.BOOKINGS -> {

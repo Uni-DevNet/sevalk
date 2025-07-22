@@ -25,6 +25,13 @@ import androidx.compose.ui.unit.sp
 import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.R
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 data class Message(
     val text: String,
@@ -41,16 +48,30 @@ fun InboxScreen(
     modifier: Modifier = Modifier
 ) {
     var messageText by remember { mutableStateOf("") }
-    
-    val messages = remember {
-        listOf(
-            Message("Hi! I have a booking with you today at 2 PM", "10:15 AM", true),
-            Message("Yes, I have you on my schedule. Kitchen sink repair, right?", "10:20 AM", false),
-            Message("That's correct! The leak is getting worse", "10:25 AM", true),
-            Message("I'll be there at 2 PM sharp!", "10:20 AM", false)
-        )
+    val messages = remember { mutableStateListOf<Message>() }
+    val database = FirebaseDatabase.getInstance()
+    val chatId = remember(contactName) { contactName.replace(" ", "_").lowercase() } // Simple chat id, improve as needed
+    val messagesRef = database.getReference("chats/$chatId/messages")
+    val coroutineScope = rememberCoroutineScope()
+
+    // Listen for messages from Firebase
+    LaunchedEffect(chatId) {
+        messagesRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val newMessages = mutableListOf<Message>()
+                for (msgSnapshot in snapshot.children) {
+                    val text = msgSnapshot.child("text").getValue(String::class.java) ?: ""
+                    val time = msgSnapshot.child("time").getValue(String::class.java) ?: ""
+                    val isFromMe = msgSnapshot.child("isFromMe").getValue(Boolean::class.java) ?: false
+                    newMessages.add(Message(text, time, isFromMe))
+                }
+                messages.clear()
+                messages.addAll(newMessages)
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -205,7 +226,18 @@ fun InboxScreen(
             IconButton(
                 onClick = { 
                     if (messageText.isNotBlank()) {
-                        // Handle send message
+                        val newMessage = Message(
+                            text = messageText,
+                            time = java.text.SimpleDateFormat("hh:mm a").format(java.util.Date()),
+                            isFromMe = true
+                        )
+                        // Add to local list immediately
+                        messages.add(newMessage)
+                        // Save to Firebase
+                        coroutineScope.launch(Dispatchers.IO) {
+                            val key = messagesRef.push().key ?: System.currentTimeMillis().toString()
+                            messagesRef.child(key).setValue(newMessage)
+                        }
                         messageText = ""
                     }
                 },
@@ -256,9 +288,7 @@ fun MessageBubble(
                     color = Color.Black
                 )
             }
-            
             Spacer(modifier = Modifier.height(4.dp))
-            
             Text(
                 text = message.time,
                 fontSize = 12.sp,
