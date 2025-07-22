@@ -21,6 +21,13 @@ import com.sevalk.ui.theme.S_GREEN
 import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.R
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.ValueEventListener
+import kotlinx.coroutines.launch
+import com.google.firebase.firestore.FirebaseFirestore
 
 data class ChatItem(
     val name: String,
@@ -36,14 +43,78 @@ fun ChatScreen(
     onChatItemClick: (ChatItem) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
-    val chatItems = remember {
-        listOf(
-            ChatItem("Mike's Plumbing", "I'll be there at 2 PM sharp!", "10:30 AM", 2, true),
-            ChatItem("Lisa Chen", "See you tomorrow for the session", "10:30 AM"),
-            ChatItem("Clean Pro Services", "Thank you for the great service. Its rea...", "10:30 AM", 5)
-        )
+    val chatItems = remember { mutableStateListOf<ChatItem>() }
+    val currentUser = FirebaseAuth.getInstance().currentUser
+    val database = FirebaseDatabase.getInstance()
+    val chatRef = database.getReference("chats")
+    val coroutineScope = rememberCoroutineScope()
+    val firestore = remember { FirebaseFirestore.getInstance() }
+
+    // Listen for chat conversations for the current user
+    LaunchedEffect(currentUser?.uid) {
+        if (currentUser?.uid == null) return@LaunchedEffect
+        chatRef.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val newChats = mutableListOf<ChatItem>()
+                val chatNames = mutableListOf<String>()
+                for (userSnapshot in snapshot.children) {
+                    val userName = userSnapshot.key ?: continue
+                    chatNames.add(userName)
+                    val messagesSnapshot = userSnapshot.child("messages")
+                    var lastMessageText = ""
+                    var lastMessageTime = ""
+                    var unreadCount = 0
+                    var lastMessageFromMe = false
+
+                    // Find the last message and count unread
+                    var lastMessageKey: String? = null
+                    for (msg in messagesSnapshot.children) {
+                        lastMessageKey = msg.key
+                        val fromMe = msg.child("fromMe").getValue(Boolean::class.java) ?: false
+                        val isRead = msg.child("isRead").getValue(Boolean::class.java) ?: false
+                        // Count as unread if not from me and not read
+                        if (!fromMe && !isRead) {
+                            unreadCount++
+                        }
+                    }
+                    if (lastMessageKey != null) {
+                        val lastMsg = messagesSnapshot.child(lastMessageKey)
+                        lastMessageText = lastMsg.child("text").getValue(String::class.java) ?: ""
+                        lastMessageTime = lastMsg.child("time").getValue(String::class.java) ?: ""
+                        lastMessageFromMe = lastMsg.child("fromMe").getValue(Boolean::class.java) ?: false
+                    }
+
+                    newChats.add(
+                        ChatItem(
+                            name = userName,
+                            message = lastMessageText,
+                            time = lastMessageTime,
+                            unreadCount = unreadCount,
+                            isOnline = false // Will update below
+                        )
+                    )
+                }
+                chatItems.clear()
+                chatItems.addAll(newChats)
+
+                // Fetch online status for each chat participant (service provider)
+                chatNames.forEachIndexed { idx, name ->
+                    firestore.collection("service_providers")
+                        .whereEqualTo("businessName", name)
+                        .limit(1)
+                        .get()
+                        .addOnSuccessListener { documents ->
+                            val isOnline = documents.firstOrNull()?.getBoolean("isAvailable") == true
+                            if (idx < chatItems.size) {
+                                chatItems[idx] = chatItems[idx].copy(isOnline = isOnline)
+                            }
+                        }
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
-    
+
     Column(
         modifier = modifier
             .fillMaxSize()

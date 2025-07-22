@@ -62,7 +62,11 @@ fun InboxScreen(
                 for (msgSnapshot in snapshot.children) {
                     val text = msgSnapshot.child("text").getValue(String::class.java) ?: ""
                     val time = msgSnapshot.child("time").getValue(String::class.java) ?: ""
-                    val isFromMe = msgSnapshot.child("isFromMe").getValue(Boolean::class.java) ?: false
+                    val isFromMe = when (val value = msgSnapshot.child("fromMe").value) {
+                        is Boolean -> value
+                        is String -> value.toBoolean()
+                        else -> false
+                    }
                     newMessages.add(Message(text, time, isFromMe))
                 }
                 messages.clear()
@@ -285,7 +289,7 @@ fun MessageBubble(
                 Text(
                     text = message.text,
                     fontSize = 14.sp,
-                    color = Color.Black
+                    color = if (message.isFromMe) Color.White else Color.Black
                 )
             }
             Spacer(modifier = Modifier.height(4.dp))
