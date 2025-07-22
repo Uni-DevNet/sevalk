@@ -22,18 +22,21 @@ import androidx.compose.material.icons.filled.Phone
 import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.MailOutline
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
-import androidx.compose.runtime.* // Import for remember and mutableStateOf
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.sevalk.R
 import androidx.navigation.NavController
 import com.sevalk.presentation.navigation.Screen
@@ -41,6 +44,7 @@ import com.sevalk.presentation.customer.profile.CustomerProfileViewModel
 import androidx.hilt.navigation.compose.hiltViewModel
 import android.util.Log
 import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material3.CircularProgressIndicator
 
 // Data class to hold profile information
 data class UserProfile(
@@ -52,7 +56,8 @@ data class UserProfile(
     val rating: Double,
     val email: String,
     val phoneNumber: String,
-    val joinDate: String // e.g., "March 2023" (just the month/year of joining)
+    val joinDate: String, // e.g., "March 2023" (just the month/year of joining)
+    val profileImageUrl: String? = null // Add profile image URL field
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -68,7 +73,9 @@ fun CustomerProfileScreen(
     onHelpSupportClick: () -> Unit
 ) {
     val userProfile by viewModel.userProfile.collectAsState()
+    val isUploadingImage by viewModel.isUploadingImage.collectAsState()
     var showEditProfilePopup by remember { mutableStateOf(false) }
+    var showImagePicker by remember { mutableStateOf(false) }
 
     // Add debug logging
     LaunchedEffect(Unit) {
@@ -122,18 +129,60 @@ fun CustomerProfileScreen(
                                 .size(80.dp)
                                 .clip(CircleShape)
                                 .background(Color.LightGray)
-                        )
-                        // Edit icon for profile picture - this will open the popup
+                        ) {
+                            // Display profile image or placeholder
+                            if (profile.profileImageUrl != null && profile.profileImageUrl.isNotEmpty()) {
+                                AsyncImage(
+                                    model = profile.profileImageUrl,
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                    contentScale = ContentScale.Crop,
+//                                    placeholder = painterResource(id = R.drawable.ic_launcher_foreground), // Add a placeholder drawable
+//                                    error = painterResource(id = R.drawable.ic_launcher_foreground) // Add an error drawable
+                                )
+                            } else {
+                                // Show default avatar icon when no profile image
+                                Icon(
+                                    imageVector = Icons.Default.Person,
+                                    contentDescription = "Default Avatar",
+                                    modifier = Modifier
+                                        .size(40.dp)
+                                        .align(Alignment.Center),
+                                    tint = Color.Gray
+                                )
+                            }
+                            
+                            // Show loading indicator when uploading (overlay on top of image)
+                            if (isUploadingImage) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(Color.Black.copy(alpha = 0.5f))
+                                        .clip(CircleShape),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(24.dp),
+                                        color = Color(0xFFFDD835),
+                                        strokeWidth = 2.dp
+                                    )
+                                }
+                            }
+                        }
+                        
+                        // Edit icon for profile picture
                         Box(
                             modifier = Modifier
                                 .size(24.dp)
                                 .clip(CircleShape)
                                 .background(YellowHighlight)
                                 .border(1.dp, Color.White, CircleShape)
-                                .clickable(onClick = { showEditProfilePopup = true }) // Open popup on click
+                                .clickable(onClick = { showImagePicker = true })
                         ) {
                             Icon(
-                                painter = painterResource(id = R.drawable.camera), // Use a camera icon here or Icons.Default.Edit
+                                painter = painterResource(id = R.drawable.camera),
                                 contentDescription = "Edit Profile",
                                 tint = Color.Black,
                                 modifier = Modifier
@@ -320,20 +369,27 @@ fun CustomerProfileScreen(
                 Spacer(modifier = Modifier.height(24.dp))
             }
 
+            // Image Picker Dialog
+            if (showImagePicker) {
+                ImagePickerDialog(
+                    onDismiss = { showImagePicker = false },
+                    onImageSelected = { uri ->
+                        viewModel.uploadProfileImage(uri)
+                    }
+                )
+            }
+
             // --- Edit Profile Popup Integration ---
             if (showEditProfilePopup) {
                 EditProfilePopup(
-                    userProfile = profile, // Pass the current userProfile data to the popup
-                    onDismiss = { showEditProfilePopup = false }, // Hide popup on dismiss
+                    userProfile = profile,
+                    onDismiss = { showEditProfilePopup = false },
                     onSave = { newName, newPhoneNumber ->
-                        // Update the userProfile state with the new values
                         viewModel.updateUserProfile(
                             name = newName,
                             phoneNumber = newPhoneNumber
                         )
-                        showEditProfilePopup = false // Hide popup after saving
-                        // TODO: In a real app, you would also trigger an API call to save these changes
-                        // to your backend or data layer.
+                        showEditProfilePopup = false
                     }
                 )
             }
