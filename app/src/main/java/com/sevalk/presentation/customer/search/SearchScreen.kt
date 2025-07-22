@@ -45,7 +45,8 @@ fun ServiceProviderMapScreen(
     viewModel: SearchViewModel = hiltViewModel(),
     navController: NavController? = null,
     onNavigateToBooking: () -> Unit = {},
-    initialServiceType: com.sevalk.presentation.components.map.ServiceType? = null
+    initialServiceType: com.sevalk.presentation.components.map.ServiceType? = null,
+    onNavigateToMessages: () -> Unit = {}
 ) {
     var selectedServiceType by remember { mutableStateOf(initialServiceType ?: ServiceType.ALL) }
     var searchQuery by remember { mutableStateOf("") }
@@ -135,7 +136,11 @@ fun ServiceProviderMapScreen(
                     currentLocation = currentLocation,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 1.dp)
+                        .padding(bottom = 1.dp),
+                    onMessageClick = {
+                        selectedProvider = null
+                        navController?.navigate("inbox/${provider.name}") // Navigate to provider's inbox
+                    }
                 )
             }
         }
@@ -148,7 +153,8 @@ fun ProviderInfoCard(
     onDismiss: () -> Unit,
     onBookNow: () -> Unit = {},
     currentLocation: LatLng? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onMessageClick: () -> Unit = {}
 ) {
     var isFavorite by remember { mutableStateOf(false) }
     val context = LocalContext.current
@@ -369,7 +375,7 @@ fun ProviderInfoCard(
                 }
                 
                 Button(
-                    onClick = {},
+                    onClick = onMessageClick,
                     modifier = Modifier.size(52.dp),
                     shape = androidx.compose.foundation.shape.RoundedCornerShape(8.dp),
                     colors = ButtonDefaults.buttonColors(

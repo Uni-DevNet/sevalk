@@ -243,15 +243,9 @@ fun SevaLKNavigation(
         
         // Shared Screens
         composable(Screen.Chat.route) {
-            ChatScreen(
-                onChatItemClick = { chatItem ->
-                    navController.navigate("inbox/${chatItem.name}")
-                }
+            MainNavigation(
+                navController = navController
             )
-        }
-
-        composable(Screen.ProviderHome.route) {
-            ProviderHomeScreen(navController = navController)
         }
 
         composable("inbox/{contactName}") { backStackEntry ->
@@ -259,7 +253,9 @@ fun SevaLKNavigation(
             InboxScreen(
                 contactName = contactName,
                 onBackClick = {
-                    navController.popBackStack()
+                    navController.navigate(Screen.Chat.route) {
+                        popUpTo(Screen.Chat.route) { inclusive = true }
+                    }
                 }
             )
         }
