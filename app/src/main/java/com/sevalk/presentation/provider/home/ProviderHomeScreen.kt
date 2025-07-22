@@ -28,6 +28,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.sevalk.presentation.navigation.Screen
+import androidx.compose.ui.platform.LocalContext
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.maps.model.LatLng
+import android.location.Geocoder
+import java.util.Locale
+import androidx.compose.runtime.LaunchedEffect
 
 data class Job(
     val title: String,
@@ -37,6 +43,16 @@ data class Job(
     val icon: ImageVector? = null,
     val iconText: String? = null
 )
+
+fun getGreeting(): String {
+    val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+    return when (hour) {
+        in 4..11 -> "Good Morning!"
+        in 12..16 -> "Good Afternoon!"
+        in 17..19 -> "Good Evening!"
+        else -> "Good Night!"
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -49,6 +65,40 @@ fun ProviderHomeScreen(
         Job("Plumbing repair", "Customer: John Doe", "Tomorrow, 1:00 PM", "Pending", Icons.Default.Build),
         Job("Math Tutoring", "Customer: Jane Doe", "Tomorrow, 1:00 PM", "Pending", iconText = "\uD83D\uDCDA")
     )
+
+    val context = LocalContext.current
+    var currentLocation by remember { mutableStateOf<LatLng?>(null) }
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    var currentAddress by remember { mutableStateOf<String?>(null) }
+
+    // Request location on first composition
+    LaunchedEffect(Unit) {
+        // You may want to check permissions here!
+        fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+            location?.let {
+                currentLocation = LatLng(it.latitude, it.longitude)
+            }
+        }
+    }
+
+    // Reverse geocode when currentLocation changes
+    LaunchedEffect(currentLocation) {
+        currentLocation?.let { loc ->
+            try {
+                val geocoder = Geocoder(context, Locale.getDefault())
+                val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
+                if (!addresses.isNullOrEmpty()) {
+                    val address = addresses[0]
+                    val addressLine = address.getAddressLine(0)
+                    currentAddress = addressLine
+                } else {
+                    currentAddress = null
+                }
+            } catch (e: Exception) {
+                currentAddress = null
+            }
+        }
+    }
 
     LazyColumn(
         modifier = Modifier
@@ -64,16 +114,19 @@ fun ProviderHomeScreen(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        "Good Morning!",
+                        getGreeting(),
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp,
                         color = Color.Black
                     )
-                    Text(
-                        "\uD83D\uDCCD Weligama, Southern Province",
-                        color = Color.Gray,
-                        fontSize = 14.sp
-                    )
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("📍 ", fontSize = 14.sp)
+                        Text(
+                            currentAddress ?: "Weligama, Southern Province",
+                            color = Color.Gray,
+                            fontSize = 14.sp
+                        )
+                    }
                 }
                 Row {
                     IconButton(onClick = { /* Handle notifications */ }) {

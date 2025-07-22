@@ -44,13 +44,21 @@ import com.sevalk.presentation.components.map.calculateDistance
 fun ServiceProviderMapScreen(
     viewModel: SearchViewModel = hiltViewModel(),
     navController: NavController? = null,
-    onNavigateToBooking: () -> Unit = {}
+    onNavigateToBooking: () -> Unit = {},
+    initialServiceType: com.sevalk.presentation.components.map.ServiceType? = null
 ) {
-    var selectedServiceType by remember { mutableStateOf(ServiceType.ALL) }
+    var selectedServiceType by remember { mutableStateOf(initialServiceType ?: ServiceType.ALL) }
     var searchQuery by remember { mutableStateOf("") }
     var selectedProvider by remember { mutableStateOf<ServiceProvider?>(null) }
     var currentLocation by remember { mutableStateOf<LatLng?>(null) }
     val providers by viewModel.serviceProviders.collectAsState()
+
+    // If initialServiceType changes (e.g. from HomeScreen), update selectedServiceType
+    LaunchedEffect(initialServiceType) {
+        if (initialServiceType != null) {
+            selectedServiceType = initialServiceType
+        }
+    }
 
     LaunchedEffect(searchQuery, selectedServiceType) {
         viewModel.searchProviders(searchQuery, selectedServiceType)

@@ -53,6 +53,7 @@ fun MainNavigation(
     var providerSelectedTab by remember { mutableStateOf(ProviderNavigationTab.DASHBOARD) }
     var showCreateBillScreen by remember { mutableStateOf(false) }
     var selectedJobForBill by remember { mutableStateOf<Job?>(null) }
+    var selectedServiceType by remember { mutableStateOf<com.sevalk.presentation.components.map.ServiceType?>(null) }
     
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = currentBackStackEntry?.destination?.route
@@ -125,6 +126,9 @@ fun MainNavigation(
                 CustomerBottomNavigationBar(
                     selectedTab = customerSelectedTab,
                     onTabSelected = { tab ->
+                        if (tab == CustomerNavigationTab.SEARCH) {
+                            selectedServiceType = null // Reset filter if user taps tab
+                        }
                         customerSelectedTab = tab
                         when (tab) {
                             CustomerNavigationTab.HOME -> {
@@ -200,11 +204,18 @@ fun MainNavigation(
                     CustomerNavigationTab.HOME -> {
                         HomeScreen(
                             navController = navController,
-                            onSwitchToProvider = switchToProviderMode
+                            onSwitchToProvider = switchToProviderMode,
+                            onServiceSelected = { serviceType ->
+                                selectedServiceType = serviceType
+                                customerSelectedTab = CustomerNavigationTab.SEARCH
+                            }
                         )
                     }
                     CustomerNavigationTab.SEARCH -> {
-                        ServiceProviderMapScreen(navController = navController)
+                        ServiceProviderMapScreen(
+                            navController = navController,
+                            initialServiceType = selectedServiceType
+                        )
                     }
                     CustomerNavigationTab.BOOKINGS -> {
                         MyBookingsScreen(navController = navController)
