@@ -6,13 +6,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import com.sevalk.data.models.Job
+import com.sevalk.data.models.Booking
 
 @Composable
 fun AcceptedJobsSection(
     todaysEarnings: String,
     jobsToday: Int,
-    jobs: List<Job>,
+    bookings: List<Booking>,
     onViewDetails: (String) -> Unit,
     onCreateBill: (String) -> Unit
 ) {
@@ -25,16 +25,16 @@ fun AcceptedJobsSection(
 
         Spacer(modifier = Modifier.height(24.dp))
         
-        // Accepted jobs list
+        // Accepted bookings list
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(16.dp),
             contentPadding = PaddingValues(bottom = 16.dp)
         ) {
-            items(jobs) { job ->
+            items(bookings) { booking ->
                 AcceptedJobCard(
-                    job = job,
-                    onViewDetails = { onViewDetails(job.id) },
-                    onCreateBill = { onCreateBill(job.id) }
+                    booking = booking,
+                    onViewDetails = { onViewDetails(booking.id) },
+                    onCreateBill = { onCreateBill(booking.id) }
                 )
             }
         }

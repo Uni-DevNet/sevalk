@@ -125,6 +125,8 @@ class BookingViewModel @Inject constructor(
                     Timber.e(e, "Error parsing date: $selectedDate")
                     System.currentTimeMillis()
                 }
+
+                val customerName = authRepository.getCustomerName() ?: "Unknown Customer"
                 
                 // Create booking object
                 val booking = Booking(
@@ -132,6 +134,7 @@ class BookingViewModel @Inject constructor(
                     providerId = provider.id,
                     providerName = provider.businessName, // Add provider business name
                     serviceId = selectedServiceObj.id.toString(),
+                    customerName = customerName,
                     serviceName = selectedService,
                     description = description,
                     serviceLocation = provider.serviceLocation ?: ServiceLocation(),

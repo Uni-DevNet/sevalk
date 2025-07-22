@@ -2,9 +2,12 @@ package com.sevalk.presentation.provider.jobs
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.sevalk.data.models.Job
+import com.sevalk.data.models.Booking
+import com.sevalk.data.models.BookingStatus
 import com.sevalk.data.models.JobStatus
 import com.sevalk.data.models.JobsState
+import com.sevalk.data.models.toBookingStatus
+import com.sevalk.data.models.toJobStatus
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -16,62 +19,58 @@ class JobsViewModel : ViewModel() {
     val state: StateFlow<JobsState> = _state.asStateFlow()
 
     init {
-        loadJobs()
+        loadBookings()
     }
 
     fun onFilterChanged(status: JobStatus) {
         _state.value = _state.value.copy(currentFilter = status)
-        loadJobsForFilter(status)
+        loadBookingsForFilter(status)
     }
 
-    fun onAcceptJob(jobId: String) {
+    fun onAcceptBooking(bookingId: String) {
         viewModelScope.launch {
-            // Implement job acceptance logic
-            val updatedJobs = _state.value.jobs.map { job ->
-                if (job.id == jobId) job.copy(status = JobStatus.ACCEPTED) else job
+            // Implement booking acceptance logic
+            val updatedBookings = _state.value.bookings.map { booking ->
+                if (booking.id == bookingId) booking.copy(status = BookingStatus.ACCEPTED) else booking
             }
-            _state.value = _state.value.copy(jobs = updatedJobs)
+            _state.value = _state.value.copy(bookings = updatedBookings)
         }
     }
 
-    private fun loadJobs() {
+    private fun loadBookings() {
         // Mock data - replace with actual repository call
-        val mockJobs = listOf(
-            Job(
+        val mockBookings = listOf(
+            Booking(
                 id = "1",
-                clientName = "Sarah Johnson",
-                clientRating = 4.8f,
-                title = "Kitchen Plumbing Repair",
+                customerName = "Sarah Johnson",
+                serviceName = "Kitchen Plumbing Repair",
                 description = "Kitchen sink is leaking from the pipes underneath. Water...",
-                date = "2025-06-07",
-                time = "10:00 AM",
-                distance = "1.2 km",
-                timeAgo = "2 hours ago",
-                status = JobStatus.ACCEPTED
+                scheduledDate = System.currentTimeMillis() + (24 * 60 * 60 * 1000), // Tomorrow
+                scheduledTime = "10:00 AM",
+                status = BookingStatus.ACCEPTED,
+                createdAt = System.currentTimeMillis() - (2 * 60 * 60 * 1000) // 2 hours ago
             ),
-            Job(
+            Booking(
                 id = "2",
-                clientName = "Mike Chen",
-                clientRating = 4.6f,
-                title = "Bathroom Pipe Installation",
+                customerName = "Mike Chen",
+                serviceName = "Bathroom Pipe Installation",
                 description = "New bathroom renovation - need pipes connected for...",
-                date = "2025-06-08",
-                time = "11:00 AM",
-                distance = "2.2 km",
-                timeAgo = "2 hours ago",
-                status = JobStatus.ACCEPTED
+                scheduledDate = System.currentTimeMillis() + (48 * 60 * 60 * 1000), // Day after tomorrow
+                scheduledTime = "11:00 AM",
+                status = BookingStatus.ACCEPTED,
+                createdAt = System.currentTimeMillis() - (2 * 60 * 60 * 1000) // 2 hours ago
             )
         )
 
         _state.value = _state.value.copy(
             todaysEarnings = "LKR 2500",
             jobsToday = 4,
-            jobs = mockJobs
+            bookings = mockBookings
         )
     }
 
-    private fun loadJobsForFilter(status: JobStatus) {
-        // Filter jobs based on status
-        loadJobs() // Reload and filter
+    private fun loadBookingsForFilter(status: JobStatus) {
+        // Filter bookings based on status
+        loadBookings() // Reload and filter
     }
 }

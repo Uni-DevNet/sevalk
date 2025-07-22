@@ -41,6 +41,7 @@ interface AuthRepository {
     suspend fun createGoogleUser(email: String, fullName: String, userType: UserType): Result<FirebaseUser>
     suspend fun createGoogleServiceProvider(email: String, fullName: String, userType: UserType): Result<FirebaseUser>
     suspend fun getCurrentUserId(): String?
+    suspend fun getCustomerName(): String?
     suspend fun getUserData(userId: String): Result<User>
     suspend fun updateUserData(user: User): Result<Unit>
     suspend fun logout()
@@ -294,7 +295,23 @@ class AuthRepositoryImpl @Inject constructor(
     override suspend fun getCurrentUserId(): String? {
         return auth.currentUser?.uid
     }
-    
+
+    override suspend fun getCustomerName(): String? {
+        val userId = getCurrentUserId()
+        val document = userId?.let {
+            firestore.collection(Constants.COLLECTION_USERS)
+                .document(it)
+                .get()
+                .await()
+        }
+        return if (document != null && document.exists()) {
+            val userData = document.data
+            userData?.get("displayName") as? String
+        } else {
+            null
+        }
+    }
+
     override suspend fun getUserData(userId: String): Result<User> {
         return try {
             val document = firestore.collection(Constants.COLLECTION_USERS)

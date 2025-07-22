@@ -8,7 +8,7 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
-import com.sevalk.data.models.Job
+import com.sevalk.data.models.Booking
 import com.sevalk.presentation.auth.AuthState
 import com.sevalk.presentation.auth.AuthViewModel
 import com.sevalk.presentation.chat.ChatScreen
@@ -52,7 +52,7 @@ fun MainNavigation(
     var customerSelectedTab by remember { mutableStateOf(CustomerNavigationTab.HOME) }
     var providerSelectedTab by remember { mutableStateOf(ProviderNavigationTab.DASHBOARD) }
     var showCreateBillScreen by remember { mutableStateOf(false) }
-    var selectedJobForBill by remember { mutableStateOf<Job?>(null) }
+    var selectedBookingForBill by remember { mutableStateOf<Booking?>(null) }
     var selectedServiceType by remember { mutableStateOf<com.sevalk.presentation.components.map.ServiceType?>(null) }
     
     val currentBackStackEntry by navController.currentBackStackEntryAsState()
@@ -80,17 +80,17 @@ fun MainNavigation(
     }
 
     // Show CreateServiceBillScreen if needed
-    if (showCreateBillScreen && selectedJobForBill != null) {
+    if (showCreateBillScreen && selectedBookingForBill != null) {
         CreateServiceBillScreen(
-            job = selectedJobForBill!!,
+            booking = selectedBookingForBill!!,
             onBackClick = {
                 showCreateBillScreen = false
-                selectedJobForBill = null
+                selectedBookingForBill = null
             },
             onConfirmBill = {
                 // Handle bill confirmation
                 showCreateBillScreen = false
-                selectedJobForBill = null
+                selectedBookingForBill = null
             }
         )
         return
@@ -164,8 +164,8 @@ fun MainNavigation(
                     }
                     ProviderNavigationTab.JOBS -> {
                         JobsScreen(
-                            onNavigateToCreateBill = { job ->
-                                selectedJobForBill = job
+                            onNavigateToCreateBill = { booking ->
+                                selectedBookingForBill = booking
                                 showCreateBillScreen = true
                             }
                         )

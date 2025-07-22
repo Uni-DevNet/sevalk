@@ -19,8 +19,10 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sevalk.data.models.Job
-import com.sevalk.data.models.JobStatus
+import com.sevalk.data.models.Booking
+import com.sevalk.data.models.BookingStatus
+import com.sevalk.data.models.toJobDate
+import com.sevalk.data.models.toJobTitle
 import com.sevalk.ui.theme.S_YELLOW
 
 data class ServiceItem(
@@ -39,7 +41,7 @@ data class AdditionalCost(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateServiceBillScreen(
-    job: Job,
+    booking: Booking,
     onBackClick: () -> Unit,
     onConfirmBill: () -> Unit
 ) {
@@ -94,19 +96,19 @@ fun CreateServiceBillScreen(
             item {
                 Column {
                     Text(
-                        text = "Job Title: ${job.title}",
+                        text = "Job Title: ${booking.toJobTitle()}",
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp,
                         color = Color.Gray
                     )
                     Text(
-                        text = "Customer: ${job.clientName}",
+                        text = "Customer: ${booking.customerName}",
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp,
                         color = Color.Gray
                     )
                     Text(
-                        text = "Date: ${job.date}",
+                        text = "Date: ${booking.toJobDate()}",
                         fontWeight = FontWeight.Medium,
                         fontSize = 14.sp,
                         color = Color.Gray
@@ -384,17 +386,15 @@ fun AdditionalCostItem(
 @Composable
 fun CreateServiceBillScreenPreview() {
     CreateServiceBillScreen(
-        job = Job(
+        booking = Booking(
             id = "1",
-            clientName = "John Smith",
-            clientRating = 4.8f,
-            title = "Kitchen Plumbing Repair",
+            customerName = "John Smith",
+            serviceName = "Kitchen Plumbing Repair",
             description = "Kitchen sink repair",
-            date = "2025-05-30",
-            time = "10:00 AM",
-            distance = "1.2 km",
-            timeAgo = "2 hours ago",
-            status = JobStatus.ACCEPTED
+            scheduledDate = System.currentTimeMillis() + (24 * 60 * 60 * 1000), // Tomorrow
+            scheduledTime = "10:00 AM",
+            status = BookingStatus.ACCEPTED,
+            createdAt = System.currentTimeMillis() - (2 * 60 * 60 * 1000) // 2 hours ago
         ),
         onBackClick = {},
         onConfirmBill = {}

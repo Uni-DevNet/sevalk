@@ -23,13 +23,19 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.sevalk.data.models.Job
+import com.sevalk.data.models.Booking
+import com.sevalk.data.models.toJobDate
+import com.sevalk.data.models.toJobDescription
+import com.sevalk.data.models.toJobDistance
+import com.sevalk.data.models.toJobTime
+import com.sevalk.data.models.toJobTimeAgo
+import com.sevalk.data.models.toJobTitle
 import com.sevalk.ui.theme.S_YELLOW
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun JobDetailsBottomSheet(
-    job: Job,
+    booking: Booking,
     onDismiss: () -> Unit,
     onCall: () -> Unit,
     onMessage: () -> Unit,
@@ -54,7 +60,7 @@ fun JobDetailsBottomSheet(
         windowInsets = WindowInsets(0)
     ) {
         JobDetailsSheetContent(
-            job = job,
+            booking = booking,
             onCall = onCall,
             onMessage = onMessage,
             onDecline = onDecline,
@@ -65,7 +71,7 @@ fun JobDetailsBottomSheet(
 
 @Composable
 fun JobDetailsSheetContent(
-    job: Job,
+    booking: Booking,
     onCall: () -> Unit,
     onMessage: () -> Unit,
     onDecline: () -> Unit,
@@ -93,7 +99,7 @@ fun JobDetailsSheetContent(
             
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = job.clientName,
+                    text = booking.customerName,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.SemiBold
                 )
@@ -109,7 +115,7 @@ fun JobDetailsSheetContent(
                     )
                     Spacer(modifier = Modifier.width(4.dp))
                     Text(
-                        text = job.clientRating.toString(),
+                        text = "4.8", // Static rating for now
                         fontSize = 14.sp,
                         color = Color.Gray
                     )
@@ -117,7 +123,7 @@ fun JobDetailsSheetContent(
             }
             
             Text(
-                text = job.timeAgo,
+                text = booking.toJobTimeAgo(),
                 fontSize = 12.sp,
                 color = Color.Gray
             )
@@ -127,7 +133,7 @@ fun JobDetailsSheetContent(
         
         // Job title
         Text(
-            text = job.title,
+            text = booking.toJobTitle(),
             fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold
         )
@@ -136,7 +142,7 @@ fun JobDetailsSheetContent(
         
         // Job description
         Text(
-            text = job.description,
+            text = booking.toJobDescription(),
             fontSize = 14.sp,
             color = Color.Gray,
             lineHeight = 20.sp
@@ -151,15 +157,15 @@ fun JobDetailsSheetContent(
         ) {
             JobDetailColumn(
                 icon = Icons.Default.DateRange,
-                text = job.date
+                text = booking.toJobDate()
             )
             JobDetailColumn(
                 icon = Icons.Default.Schedule,
-                text = job.time
+                text = booking.toJobTime()
             )
             JobDetailColumn(
                 icon = Icons.Default.LocationOn,
-                text = job.distance
+                text = booking.toJobDistance()
             )
         }
         

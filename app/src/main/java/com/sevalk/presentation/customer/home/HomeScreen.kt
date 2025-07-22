@@ -111,8 +111,18 @@ fun HomeScreen(
                 val addresses = geocoder.getFromLocation(loc.latitude, loc.longitude, 1)
                 if (!addresses.isNullOrEmpty()) {
                     val address = addresses[0]
-                    val addressLine = address.getAddressLine(0)
-                    currentAddress = addressLine
+
+                    // Get city and country
+                    val city = address.locality ?: address.subAdminArea ?: address.adminArea
+                    val country = address.countryName
+
+                    // Format as "City, Country"
+                    currentAddress = when {
+                        city != null && country != null -> "$city, $country"
+                        country != null -> country
+                        city != null -> city
+                        else -> null
+                    }
                 } else {
                     currentAddress = null
                 }
