@@ -1,11 +1,13 @@
 package com.sevalk.presentation.provider.profile
 
+import android.net.Uri
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sevalk.data.models.ServiceProvider
+import com.sevalk.data.repositories.ImageRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,11 +21,15 @@ import java.util.*
 @HiltViewModel
 class ProviderProfileViewModel @Inject constructor(
     private val auth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val imageRepository: ImageRepository
 ) : ViewModel() {
     
     private val _providerProfile = MutableStateFlow<ProviderProfile?>(null)
     val providerProfile: StateFlow<ProviderProfile?> = _providerProfile
+
+    private val _isUploadingImage = MutableStateFlow(false)
+    val isUploadingImage: StateFlow<Boolean> = _isUploadingImage
 
     init {
         loadProviderProfile()
@@ -33,7 +39,7 @@ class ProviderProfileViewModel @Inject constructor(
         viewModelScope.launch {
             auth.currentUser?.let { user ->
                 try {
-                    // First get the provider document
+                    // Get the provider document
                     val providerDoc = firestore.collection("service_providers")
                         .document(user.uid)
                         .get()
@@ -42,7 +48,7 @@ class ProviderProfileViewModel @Inject constructor(
                     val provider = providerDoc.data?.let { ServiceProvider.fromMap(it) }
                         ?: throw Exception("Provider data not found")
 
-                    // Then get the user document for additional details
+                    // Get the user document for additional details
                     val userDoc = firestore.collection("users")
                         .document(user.uid)
                         .get()
@@ -53,12 +59,13 @@ class ProviderProfileViewModel @Inject constructor(
                         memberSince = formatDate(provider.createdAt),
                         completedJobs = provider.completedJobs,
                         totalJobs = provider.totalJobs,
-                        location = "${provider.city}, ${provider.province}, ${provider.serviceLocation.country}",
+                        location = "${provider.serviceLocation.country}",
                         totalEarnings = formatCurrency(provider.totalEarnings),
                         email = auth.currentUser?.email ?: "",
                         phoneNumber = userDoc.getString("phoneNumber") ?: "",
                         isAvailable = provider.isAvailable,
-                        responseTime = provider.responseTime
+                        responseTime = provider.responseTime,
+                        profileImageUrl = providerDoc.getString("profileImageUrl") // Get from service_providers collection
                     )
                 } catch (e: Exception) {
                     Log.e("ProviderProfileVM", "Error loading profile", e)
@@ -96,6 +103,56 @@ class ProviderProfileViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("ProviderProfileVM", "Error updating profile", e)
             }
+        }
+    }
+
+    fun uploadProfileImage(imageUri: Uri) {
+        val currentUser = auth.currentUser ?: return
+
+        viewModelScope.launch {
+            _isUploadingImage.value = true
+            try {
+                // Get current profile image URL to delete old image if exists
+                val currentProfile = _providerProfile.value
+                val oldImageUrl = currentProfile?.profileImageUrl
+                
+                val result = imageRepository.uploadProfileImage(imageUri, currentUser.uid)
+                result.onSuccess { imageUrl ->
+                    // Update service_providers collection with new profile image URL
+                    firestore.collection("service_providers").document(currentUser.uid)
+                        .update("profileImageUrl", imageUrl)
+                        .await()
+
+                    // Delete old image if it exists
+                    oldImageUrl?.let { oldUrl ->
+                        try {
+                            val fileName = extractFileNameFromUrl(oldUrl)
+                            if (fileName.isNotEmpty()) {
+                                imageRepository.deleteProfileImage(fileName)
+                            }
+                        } catch (e: Exception) {
+                            Log.w("ProviderProfileVM", "Could not delete old profile image", e)
+                        }
+                    }
+
+                    loadProviderProfile() // Reload profile to show new image
+                    Log.d("ProviderProfileVM", "Profile image uploaded successfully: $imageUrl")
+                }.onFailure { exception ->
+                    Log.e("ProviderProfileVM", "Error uploading profile image", exception)
+                }
+            } catch (e: Exception) {
+                Log.e("ProviderProfileVM", "Error uploading profile image", e)
+            } finally {
+                _isUploadingImage.value = false
+            }
+        }
+    }
+    
+    private fun extractFileNameFromUrl(url: String): String {
+        return try {
+            url.substringAfterLast("/")
+        } catch (e: Exception) {
+            ""
         }
     }
 

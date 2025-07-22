@@ -43,7 +43,8 @@ data class ServiceProvider(
     val hourlyRate: Double = 0.0,
     val phone: String = "",
     val address: String = "",
-    val completedJobs: Int = 0
+    val completedJobs: Int = 0,
+    val profileImageUrl: String = "",
 )
 
 enum class ServiceType(val displayName: String, val icon: ImageVector, val color: Color) {

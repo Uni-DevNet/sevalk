@@ -56,7 +56,8 @@ class ServiceProviderRepository @Inject constructor(
                         description = data["description"] as? String ?: "",
                         hourlyRate = price.toDoubleOrNull() ?: 0.0,
                         phone = data["phone"] as? String ?: "",
-                        completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0
+                        completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0,
+                        profileImageUrl = data["profileImageUrl"] as? String ?: "" // Get directly from service_providers collection
                     )
                 } catch (e: Exception) {
                     Timber.e(e, "Error mapping provider document ${document.id}")
@@ -151,7 +152,8 @@ class ServiceProviderRepository @Inject constructor(
                         description = description,
                         phone = data["phone"] as? String ?: "",
                         hourlyRate = price.toDouble(),
-                        completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0
+                        completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0,
+                        profileImageUrl = data["profileImageUrl"] as? String ?: "" // Get directly from service_providers collection
                     )
                 } catch (e: Exception) {
                     Timber.e(e, "Error mapping provider document ${document.id}")

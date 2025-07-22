@@ -29,8 +29,11 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.sevalk.R
 import com.sevalk.presentation.customer.profile.EditProfilePopup
+import com.sevalk.presentation.customer.profile.ImagePickerDialog
 import com.sevalk.presentation.customer.profile.UserProfile
 import android.util.Log
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
 
 data class ProviderProfile(
     val name: String,
@@ -42,7 +45,8 @@ data class ProviderProfile(
     val email: String,
     val phoneNumber: String,
     val isAvailable: Boolean = true,
-    val responseTime: String = "within 1 hour"
+    val responseTime: String = "within 1 hour",
+    val profileImageUrl: String? = null // Add profile image URL field
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -58,7 +62,9 @@ fun ProviderProfileScreen(
     onSwitchToCustomerClick: () -> Unit
 ) {
     val providerProfile by viewModel.providerProfile.collectAsState()
+    val isUploadingImage by viewModel.isUploadingImage.collectAsState()
     var showEditProfilePopup by remember { mutableStateOf(false) }
+    var showImagePicker by remember { mutableStateOf(false) }
 
     // Add debug logging
     LaunchedEffect(Unit) {
@@ -114,19 +120,59 @@ fun ProviderProfileScreen(
                                     .size(80.dp)
                                     .clip(CircleShape)
                                     .background(Color.LightGray)
-                            )
-                            // Edit icon for profile picture
+                            ) {
+                                // Display profile image or placeholder
+                                if (profile.profileImageUrl != null && profile.profileImageUrl.isNotEmpty()) {
+                                    AsyncImage(
+                                        model = profile.profileImageUrl,
+                                        contentDescription = "Profile Picture",
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .clip(CircleShape),
+                                        contentScale = ContentScale.Crop
+                                    )
+                                } else {
+                                    // Show default avatar icon when no profile image
+                                    Icon(
+                                        imageVector = Icons.Default.Person,
+                                        contentDescription = "Default Avatar",
+                                        modifier = Modifier
+                                            .size(40.dp)
+                                            .align(Alignment.Center),
+                                        tint = Color.Gray
+                                    )
+                                }
+                                
+                                // Show loading indicator when uploading (overlay on top of image)
+                                if (isUploadingImage) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(Color.Black.copy(alpha = 0.5f))
+                                            .clip(CircleShape),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(24.dp),
+                                            color = Color(0xFFFDD835),
+                                            strokeWidth = 2.dp
+                                        )
+                                    }
+                                }
+                            }
+                            
+                            // Edit icon for profile picture - open image picker
                             Box(
                                 modifier = Modifier
                                     .size(24.dp)
                                     .clip(CircleShape)
                                     .background(YellowHighlight)
                                     .border(1.dp, Color.White, CircleShape)
-                                    .clickable { showEditProfilePopup = true }
+                                    .clickable { showImagePicker = true }
                             ) {
                                 Icon(
-                                    imageVector = Icons.Default.Edit,
-                                    contentDescription = "Edit Profile",
+                                    painter = painterResource(id = R.drawable.camera),
+                                    contentDescription = "Edit Profile Picture",
                                     tint = Color.Black,
                                     modifier = Modifier
                                         .size(16.dp)
@@ -340,6 +386,16 @@ fun ProviderProfileScreen(
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
+                // Image Picker Dialog
+                if (showImagePicker) {
+                    ImagePickerDialog(
+                        onDismiss = { showImagePicker = false },
+                        onImageSelected = { uri ->
+                            viewModel.uploadProfileImage(uri)
+                        }
+                    )
+                }
+
                 // Edit Profile Popup
                 if (showEditProfilePopup) {
                     EditProfilePopup(
@@ -352,7 +408,8 @@ fun ProviderProfileScreen(
                             completedBookings = 0,
                             rating = 0.0,
                             email = profile.email,
-                            joinDate = profile.memberSince
+                            joinDate = profile.memberSince,
+                            profileImageUrl = profile.profileImageUrl
                         ),
                         onDismiss = { showEditProfilePopup = false },
                         onSave = { newName, newPhoneNumber ->

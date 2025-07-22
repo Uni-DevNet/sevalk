@@ -35,15 +35,14 @@ android {
             // This creates BuildConfig.DEBUG = true
         }
         release {
-            release {
-                isMinifyEnabled = true
-                proguardFiles(
-                    getDefaultProguardFile("proguard-android-optimize.txt"),
-                    "proguard-rules.pro"
-                )
-                signingConfig = signingConfigs.getByName("release")
-            }
+            isMinifyEnabled = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            signingConfig = signingConfigs.getByName("release")
         }
+
     }
     
     // Add packaging options to handle duplicate files from email libraries
@@ -139,4 +138,14 @@ dependencies {
     implementation("com.google.code.gson:gson:2.10.1")
     implementation ("com.google.firebase:firebase-firestore-ktx:24.9.1")
     implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
+
+    // Supabase
+    implementation("io.github.jan-tennert.supabase:storage-kt:2.0.0")
+    implementation("io.github.jan-tennert.supabase:realtime-kt:2.0.0")
+    implementation("io.ktor:ktor-client-android:2.3.7")
+    implementation("io.ktor:ktor-client-core:2.3.7")
+    implementation("io.ktor:ktor-utils:2.3.7")
+
+    // Coil for AsyncImage
+    implementation("io.coil-kt:coil-compose:2.5.0")
 }
