@@ -1,5 +1,6 @@
 package com.sevalk.presentation.chat.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sevalk.data.repositories.ChatMessageItem
@@ -74,6 +75,16 @@ class InboxViewModel @Inject constructor(
             chatRepository.sendMessage(currentChatId, currentParticipantId, text)
                 .onFailure { e ->
                     Timber.e(e, "Failed to send message")
+                    // TODO: Show error message to user
+                }
+        }
+    }
+
+    fun sendImageMessage(imageUri: Uri) {
+        viewModelScope.launch {
+            chatRepository.sendImageMessage(currentChatId, currentParticipantId, imageUri)
+                .onFailure { e ->
+                    Timber.e(e, "Failed to send image message")
                     // TODO: Show error message to user
                 }
         }

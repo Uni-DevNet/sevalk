@@ -1,5 +1,6 @@
 package com.sevalk.data.repositories
 
+import android.net.Uri
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 import com.google.firebase.firestore.FirebaseFirestore
@@ -29,6 +30,8 @@ data class ChatMessageItem(
     val senderId: String = "",
     val senderName: String = "",
     val text: String = "",
+    val imageUrl: String? = null,
+    val messageType: String = "text", // "text" or "image"
     val timestamp: Long = System.currentTimeMillis(),
     val isFromMe: Boolean = false,
     val isRead: Boolean = false
@@ -50,6 +53,7 @@ interface ChatRepository {
     fun getUserOnlineStatus(userId: String): Flow<UserOnlineStatus>
     
     suspend fun sendMessage(chatId: String, recipientId: String, message: String): Result<Unit>
+    suspend fun sendImageMessage(chatId: String, recipientId: String, imageUri: Uri): Result<Unit>
     suspend fun markMessageAsRead(chatId: String, messageId: String): Result<Unit>
     suspend fun markAllMessagesAsRead(chatId: String): Result<Unit>
     
@@ -63,7 +67,8 @@ interface ChatRepository {
 class ChatRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth,
     private val database: FirebaseDatabase,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val imageRepository: ImageRepository
 ) : ChatRepository {
 
     private val chatsRef = database.getReference("chats")
@@ -136,6 +141,8 @@ class ChatRepositoryImpl @Inject constructor(
                                 senderId = lastMessageSnapshot.child("senderId").getValue(String::class.java) ?: "",
                                 senderName = lastMessageSnapshot.child("senderName").getValue(String::class.java) ?: "",
                                 text = lastMessageSnapshot.child("text").getValue(String::class.java) ?: "",
+                                imageUrl = lastMessageSnapshot.child("imageUrl").getValue(String::class.java),
+                                messageType = lastMessageSnapshot.child("messageType").getValue(String::class.java) ?: "text",
                                 timestamp = lastMessageSnapshot.child("timestamp").getValue(Long::class.java) ?: 0L,
                                 isFromMe = lastMessageSnapshot.child("senderId").getValue(String::class.java) == currentUserId,
                                 isRead = lastMessageSnapshot.child("isRead").getValue(Boolean::class.java) ?: false
@@ -194,6 +201,8 @@ class ChatRepositoryImpl @Inject constructor(
                         senderId = messageSnapshot.child("senderId").getValue(String::class.java) ?: "",
                         senderName = messageSnapshot.child("senderName").getValue(String::class.java) ?: "",
                         text = messageSnapshot.child("text").getValue(String::class.java) ?: "",
+                        imageUrl = messageSnapshot.child("imageUrl").getValue(String::class.java),
+                        messageType = messageSnapshot.child("messageType").getValue(String::class.java) ?: "text",
                         timestamp = messageSnapshot.child("timestamp").getValue(Long::class.java) ?: 0L,
                         isFromMe = messageSnapshot.child("senderId").getValue(String::class.java) == currentUserId,
                         isRead = messageSnapshot.child("isRead").getValue(Boolean::class.java) ?: false
@@ -290,6 +299,74 @@ class ChatRepositoryImpl @Inject constructor(
             Result.success(Unit)
         } catch (e: Exception) {
             Timber.e(e, "Failed to send message")
+            Result.failure(e)
+        }
+    }
+
+    override suspend fun sendImageMessage(chatId: String, recipientId: String, imageUri: Uri): Result<Unit> {
+        return try {
+            val currentUserId = getCurrentUserId() ?: return Result.failure(Exception("User not authenticated"))
+            val currentUserName = getCurrentUserName() ?: "Unknown User"
+            val currentUserType = getCurrentUserType() ?: "customer"
+            
+            // Upload image first
+            val imageUploadResult = imageRepository.uploadChatImage(imageUri, currentUserId)
+            if (imageUploadResult.isFailure) {
+                return Result.failure(imageUploadResult.exceptionOrNull() ?: Exception("Failed to upload image"))
+            }
+            
+            val imageUrl = imageUploadResult.getOrNull() ?: return Result.failure(Exception("Image URL is null"))
+            
+            // Get recipient info
+            val recipientDoc = firestore.collection(Constants.COLLECTION_USERS)
+                .document(recipientId)
+                .get()
+                .await()
+
+            val recipientName = recipientDoc.getString("displayName") ?: "Unknown User"
+            val recipientType = recipientDoc.getString("userType") ?: "customer"
+
+            val messageId = messagesRef.child(chatId).push().key ?: return Result.failure(Exception("Failed to generate message ID"))
+            val timestamp = System.currentTimeMillis()
+
+            val messageData = mapOf(
+                "id" to messageId,
+                "senderId" to currentUserId,
+                "senderName" to currentUserName,
+                "text" to "", // Empty text for image messages
+                "imageUrl" to imageUrl,
+                "messageType" to "image",
+                "timestamp" to timestamp,
+                "isRead" to false
+            )
+
+            // Save message
+            messagesRef.child(chatId).child(messageId).setValue(messageData).await()
+
+            // Update chat metadata
+            val chatData = mapOf(
+                "participants" to mapOf(
+                    currentUserId to mapOf(
+                        "name" to currentUserName,
+                        "type" to currentUserType
+                    ),
+                    recipientId to mapOf(
+                        "name" to recipientName,
+                        "type" to recipientType
+                    )
+                ),
+                "lastMessage" to messageData,
+                "updatedAt" to timestamp,
+                "unreadCount" to mapOf(
+                    recipientId to ServerValue.increment(1)
+                )
+            )
+
+            chatsRef.child(chatId).updateChildren(chatData).await()
+
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to send image message")
             Result.failure(e)
         }
     }

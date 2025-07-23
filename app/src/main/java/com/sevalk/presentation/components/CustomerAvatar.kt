@@ -18,27 +18,45 @@ import coil.compose.AsyncImage
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sevalk.ui.theme.S_YELLOW
 import kotlinx.coroutines.tasks.await
+import timber.log.Timber
 
 @Composable
 fun CustomerAvatar(
     customerId: String,
+    isProvider: Boolean = false,
     size: Dp = 40.dp,
     modifier: Modifier = Modifier
 ) {
     var customerProfileImageUrl by remember { mutableStateOf<String?>(null) }
     var isLoadingImage by remember { mutableStateOf(false) }
-    
     // Fetch customer profile image
     LaunchedEffect(customerId) {
-        if (customerId.isNotEmpty()) {
+        val firestore = FirebaseFirestore.getInstance()
+        if (customerId.isNotEmpty() && !isProvider) {
             isLoadingImage = true
             try {
-                val firestore = FirebaseFirestore.getInstance()
                 val document = firestore.collection("users")
                     .document(customerId)
                     .get()
                     .await()
-                
+
+                if (document.exists()) {
+                    customerProfileImageUrl = document.getString("profileImageUrl")
+                }
+            } catch (e: Exception) {
+                // Handle error silently, will show default avatar
+                customerProfileImageUrl = null
+            } finally {
+                isLoadingImage = false
+            }
+        } else{
+            isLoadingImage = true
+            try {
+                val document = firestore.collection("service_providers")
+                    .document(customerId)
+                    .get()
+                    .await()
+
                 if (document.exists()) {
                     customerProfileImageUrl = document.getString("profileImageUrl")
                 }

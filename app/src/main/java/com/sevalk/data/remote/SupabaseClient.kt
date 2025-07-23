@@ -17,5 +17,6 @@ class SupabaseClient @Inject constructor() {
     
     companion object {
         const val PROFILE_IMAGES_BUCKET = "profile-images"
+        const val CHAT_IMAGES_BUCKET = "chat-images"
     }
 }

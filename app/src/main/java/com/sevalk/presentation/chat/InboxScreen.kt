@@ -1,6 +1,8 @@
 package com.sevalk.presentation.chat
 
+import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -15,24 +17,31 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.R
 import com.sevalk.data.repositories.ChatMessageItem
 import com.sevalk.presentation.chat.viewmodel.InboxViewModel
+import com.sevalk.presentation.components.CustomerAvatar
+import com.sevalk.presentation.customer.profile.ImagePickerDialog
 import java.text.SimpleDateFormat
 import java.util.*
 
 data class Message(
     val id: String,
     val text: String,
+    val imageUrl: String? = null,
+    val messageType: String = "text",
     val time: String,
     val isFromMe: Boolean,
     val isRead: Boolean = false
@@ -49,6 +58,7 @@ fun InboxScreen(
     viewModel: InboxViewModel = hiltViewModel()
 ) {
     var messageText by remember { mutableStateOf("") }
+    var showImagePicker by remember { mutableStateOf(false) }
     val messages by viewModel.messages.collectAsState()
     val isOnline by viewModel.isOnline.collectAsState()
     val isLoading by viewModel.isLoading.collectAsState()
@@ -90,8 +100,12 @@ fun InboxScreen(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(Color.Gray.copy(alpha = 0.3f), CircleShape)
-                )
+                ){
+                    CustomerAvatar(
+                        customerId = participantId,
+                        size = 40.dp
+                    )
+                }
                 
                 Column {
                     Text(
@@ -156,6 +170,8 @@ fun InboxScreen(
                     val message = Message(
                         id = messageItem.id,
                         text = messageItem.text,
+                        imageUrl = messageItem.imageUrl,
+                        messageType = messageItem.messageType,
                         time = formatMessageTime(messageItem.timestamp),
                         isFromMe = messageItem.isFromMe,
                         isRead = messageItem.isRead
@@ -198,20 +214,20 @@ fun InboxScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        IconButton(
-                            onClick = { /* Handle attachment */ },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.attachment),
-                                contentDescription = "Attach",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+//                        IconButton(
+//                            onClick = { /* Handle attachment */ },
+//                            modifier = Modifier.size(24.dp)
+//                        ) {
+//                            Icon(
+//                                painter = painterResource(id = R.drawable.attachment),
+//                                contentDescription = "Attach",
+//                                tint = Color.Gray,
+//                                modifier = Modifier.size(20.dp)
+//                            )
+//                        }
                         
                         IconButton(
-                            onClick = { /* Handle camera */ },
+                            onClick = { showImagePicker = true },
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
@@ -245,6 +261,17 @@ fun InboxScreen(
             }
         }
     }
+    
+    // Show image picker dialog
+    if (showImagePicker) {
+        ImagePickerDialog(
+            onDismiss = { showImagePicker = false },
+            onImageSelected = { imageUri ->
+                viewModel.sendImageMessage(imageUri)
+                showImagePicker = false
+            }
+        )
+    }
 }
 
 @Composable
@@ -270,14 +297,44 @@ fun MessageBubble(
                             bottomEnd = if (message.isFromMe) 4.dp else 16.dp
                         )
                     )
-                    .padding(12.dp)
+                    .padding(if (message.messageType == "image") 4.dp else 12.dp)
                     .widthIn(max = 280.dp)
             ) {
-                Text(
-                    text = message.text,
-                    fontSize = 14.sp,
-                    color = if (message.isFromMe) Color.White else Color.Black
-                )
+                when (message.messageType) {
+                    "image" -> {
+                        // Display image message
+                        if (!message.imageUrl.isNullOrEmpty()) {
+                            Column {
+                                AsyncImage(
+                                    model = message.imageUrl,
+                                    contentDescription = "Shared image",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 200.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                if (message.text.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = message.text,
+                                        fontSize = 14.sp,
+                                        color = if (message.isFromMe) Color.White else Color.Black,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        // Display text message
+                        Text(
+                            text = message.text,
+                            fontSize = 14.sp,
+                            color = if (message.isFromMe) Color.White else Color.Black
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
