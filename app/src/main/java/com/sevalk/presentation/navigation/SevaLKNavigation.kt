@@ -248,9 +248,20 @@ fun SevaLKNavigation(
             )
         }
 
-        composable("inbox/{contactName}") { backStackEntry ->
+        composable(
+            route = "inbox/{chatId}/{participantId}/{contactName}",
+            arguments = listOf(
+                navArgument("chatId") { type = NavType.StringType },
+                navArgument("participantId") { type = NavType.StringType },
+                navArgument("contactName") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val chatId = backStackEntry.arguments?.getString("chatId") ?: ""
+            val participantId = backStackEntry.arguments?.getString("participantId") ?: ""
             val contactName = backStackEntry.arguments?.getString("contactName") ?: ""
             InboxScreen(
+                chatId = chatId,
+                participantId = participantId,
                 contactName = contactName,
                 onBackClick = {
                     navController.navigate(Screen.Chat.route) {

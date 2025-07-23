@@ -17,19 +17,19 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.sevalk.ui.theme.S_GREEN
 import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.R
-import com.google.firebase.auth.FirebaseAuth
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import kotlinx.coroutines.launch
-import com.google.firebase.firestore.FirebaseFirestore
+import com.sevalk.data.repositories.ChatConversationItem
+import com.sevalk.presentation.chat.viewmodel.ChatViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 data class ChatItem(
+    val chatId: String,
+    val participantId: String,
     val name: String,
     val message: String,
     val time: String,
@@ -41,79 +41,11 @@ data class ChatItem(
 @Composable
 fun ChatScreen(
     onChatItemClick: (ChatItem) -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: ChatViewModel = hiltViewModel()
 ) {
-    val chatItems = remember { mutableStateListOf<ChatItem>() }
-    val currentUser = FirebaseAuth.getInstance().currentUser
-    val database = FirebaseDatabase.getInstance()
-    val chatRef = database.getReference("chats")
-    val coroutineScope = rememberCoroutineScope()
-    val firestore = remember { FirebaseFirestore.getInstance() }
-
-    // Listen for chat conversations for the current user
-    LaunchedEffect(currentUser?.uid) {
-        if (currentUser?.uid == null) return@LaunchedEffect
-        chatRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val newChats = mutableListOf<ChatItem>()
-                val chatNames = mutableListOf<String>()
-                for (userSnapshot in snapshot.children) {
-                    val userName = userSnapshot.key ?: continue
-                    chatNames.add(userName)
-                    val messagesSnapshot = userSnapshot.child("messages")
-                    var lastMessageText = ""
-                    var lastMessageTime = ""
-                    var unreadCount = 0
-                    var lastMessageFromMe = false
-
-                    // Find the last message and count unread
-                    var lastMessageKey: String? = null
-                    for (msg in messagesSnapshot.children) {
-                        lastMessageKey = msg.key
-                        val fromMe = msg.child("fromMe").getValue(Boolean::class.java) ?: false
-                        val isRead = msg.child("isRead").getValue(Boolean::class.java) ?: false
-                        // Count as unread if not from me and not read
-                        if (!fromMe && !isRead) {
-                            unreadCount++
-                        }
-                    }
-                    if (lastMessageKey != null) {
-                        val lastMsg = messagesSnapshot.child(lastMessageKey)
-                        lastMessageText = lastMsg.child("text").getValue(String::class.java) ?: ""
-                        lastMessageTime = lastMsg.child("time").getValue(String::class.java) ?: ""
-                        lastMessageFromMe = lastMsg.child("fromMe").getValue(Boolean::class.java) ?: false
-                    }
-
-                    newChats.add(
-                        ChatItem(
-                            name = userName,
-                            message = lastMessageText,
-                            time = lastMessageTime,
-                            unreadCount = unreadCount,
-                            isOnline = false // Will update below
-                        )
-                    )
-                }
-                chatItems.clear()
-                chatItems.addAll(newChats)
-
-                // Fetch online status for each chat participant (service provider)
-                chatNames.forEachIndexed { idx, name ->
-                    firestore.collection("service_providers")
-                        .whereEqualTo("businessName", name)
-                        .limit(1)
-                        .get()
-                        .addOnSuccessListener { documents ->
-                            val isOnline = documents.firstOrNull()?.getBoolean("isAvailable") == true
-                            if (idx < chatItems.size) {
-                                chatItems[idx] = chatItems[idx].copy(isOnline = isOnline)
-                            }
-                        }
-                }
-            }
-            override fun onCancelled(error: DatabaseError) {}
-        })
-    }
+    val conversations by viewModel.conversations.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
     Column(
         modifier = modifier
@@ -153,17 +85,72 @@ fun ChatScreen(
             }
         }
         
-        // Messages List
-        LazyColumn(
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(chatItems) { chatItem ->
-                ChatItemRow(
-                    chatItem = chatItem,
-                    onClick = { onChatItemClick(chatItem) }
-                )
+        // Loading state
+        if (isLoading) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = S_YELLOW)
+            }
+        } else if (conversations.isEmpty()) {
+            // Empty state
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "No conversations yet",
+                        fontSize = 16.sp,
+                        color = Color.Gray
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Start booking services to chat with providers",
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    )
+                }
+            }
+        } else {
+            // Messages List
+            LazyColumn(
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(conversations) { conversation ->
+                    val chatItem = ChatItem(
+                        chatId = conversation.chatId,
+                        participantId = conversation.participantId,
+                        name = conversation.participantName,
+                        message = conversation.lastMessage?.text ?: "No messages yet",
+                        time = formatTime(conversation.lastMessage?.timestamp ?: conversation.updatedAt),
+                        unreadCount = conversation.unreadCount,
+                        isOnline = conversation.isOnline
+                    )
+                    
+                    ChatItemRow(
+                        chatItem = chatItem,
+                        onClick = { onChatItemClick(chatItem) }
+                    )
+                }
             }
         }
+    }
+}
+
+private fun formatTime(timestamp: Long): String {
+    val now = System.currentTimeMillis()
+    val diff = now - timestamp
+    
+    return when {
+        diff < 60 * 1000 -> "Now"
+        diff < 60 * 60 * 1000 -> "${diff / (60 * 1000)}m"
+        diff < 24 * 60 * 60 * 1000 -> SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(timestamp))
+        diff < 7 * 24 * 60 * 60 * 1000 -> SimpleDateFormat("EEE", Locale.getDefault()).format(Date(timestamp))
+        else -> SimpleDateFormat("MMM dd", Locale.getDefault()).format(Date(timestamp))
     }
 }
 

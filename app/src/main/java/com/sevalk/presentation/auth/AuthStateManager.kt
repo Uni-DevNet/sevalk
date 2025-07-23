@@ -4,11 +4,17 @@ import android.content.Context
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.FirebaseUser
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sevalk.utils.Constants
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
 import javax.inject.Inject
@@ -27,6 +33,8 @@ class AuthStateManager @Inject constructor(
     private val firebaseAuth: FirebaseAuth,
     private val firestore: FirebaseFirestore
 ) {
+    private val authScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    
     var authState by mutableStateOf(AuthState.LOADING)
         private set
 
@@ -164,10 +172,37 @@ class AuthStateManager @Inject constructor(
     }
 
     fun signOut() {
+        // Set user offline before signing out
+        setUserOfflineBeforeLogout()
+        
         firebaseAuth.signOut()
         isProviderMode = false
         authState = AuthState.UNAUTHENTICATED
         Timber.d("User signed out")
+    }
+
+    private fun setUserOfflineBeforeLogout() {
+        val currentUser = firebaseAuth.currentUser
+        if (currentUser != null) {
+            authScope.launch {
+                try {
+                    val statusData = mapOf(
+                        "isOnline" to false,
+                        "lastSeen" to System.currentTimeMillis()
+                    )
+                    
+                    FirebaseDatabase.getInstance()
+                        .getReference("user_status")
+                        .child(currentUser.uid)
+                        .setValue(statusData)
+                        .await()
+                        
+                    Timber.d("User status set to offline before logout")
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to set user offline before logout")
+                }
+            }
+        }
     }
 
     fun updateProviderMode(isProvider: Boolean) {

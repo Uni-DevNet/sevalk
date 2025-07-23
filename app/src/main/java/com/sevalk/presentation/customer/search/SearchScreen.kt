@@ -139,7 +139,9 @@ fun ServiceProviderMapScreen(
                         .padding(bottom = 1.dp),
                     onMessageClick = {
                         selectedProvider = null
-                        navController?.navigate("inbox/${provider.name}") // Navigate to provider's inbox
+                        // Create chat ID using the standard pattern
+                        val chatId = "chat_${provider.id}"
+                        navController?.navigate("inbox/$chatId/${provider.id}/${provider.name}")
                     }
                 )
             }

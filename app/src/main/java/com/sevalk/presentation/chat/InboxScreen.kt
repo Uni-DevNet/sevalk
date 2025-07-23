@@ -1,7 +1,6 @@
 package com.sevalk.presentation.chat
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,58 +21,41 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.R
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.sevalk.data.repositories.ChatMessageItem
+import com.sevalk.presentation.chat.viewmodel.InboxViewModel
+import java.text.SimpleDateFormat
+import java.util.*
 
 data class Message(
+    val id: String,
     val text: String,
     val time: String,
-    val isFromMe: Boolean
+    val isFromMe: Boolean,
+    val isRead: Boolean = false
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InboxScreen(
-    contactName: String = "Mike's Plumbing",
-    isOnline: Boolean = true,
+    chatId: String,
+    participantId: String,
+    contactName: String = "Contact",
     onBackClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: InboxViewModel = hiltViewModel()
 ) {
     var messageText by remember { mutableStateOf("") }
-    val messages = remember { mutableStateListOf<Message>() }
-    val database = FirebaseDatabase.getInstance()
-    val chatId = remember(contactName) { contactName.replace(" ", "_").lowercase() } // Simple chat id, improve as needed
-    val messagesRef = database.getReference("chats/$chatId/messages")
-    val coroutineScope = rememberCoroutineScope()
+    val messages by viewModel.messages.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    // Listen for messages from Firebase
+    // Initialize the chat
     LaunchedEffect(chatId) {
-        messagesRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val newMessages = mutableListOf<Message>()
-                for (msgSnapshot in snapshot.children) {
-                    val text = msgSnapshot.child("text").getValue(String::class.java) ?: ""
-                    val time = msgSnapshot.child("time").getValue(String::class.java) ?: ""
-                    val isFromMe = when (val value = msgSnapshot.child("fromMe").value) {
-                        is Boolean -> value
-                        is String -> value.toBoolean()
-                        else -> false
-                    }
-                    newMessages.add(Message(text, time, isFromMe))
-                }
-                messages.clear()
-                messages.addAll(newMessages)
-            }
-            override fun onCancelled(error: DatabaseError) {}
-        })
+        viewModel.initializeChat(chatId, participantId)
     }
 
     Column(
@@ -118,13 +100,11 @@ fun InboxScreen(
                         fontWeight = FontWeight.Medium,
                         color = Color.Black
                     )
-                    if (isOnline) {
-                        Text(
-                            text = "Online",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                    }
+                    Text(
+                        text = if (isOnline) "Online" else "Offline",
+                        fontSize = 14.sp,
+                        color = if (isOnline) Color.Green else Color.Gray
+                    )
                 }
             }
             
@@ -156,14 +136,32 @@ fun InboxScreen(
         }
         
         // Messages
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(messages) { message ->
-                MessageBubble(message = message)
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = S_YELLOW)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(messages) { messageItem ->
+                    val message = Message(
+                        id = messageItem.id,
+                        text = messageItem.text,
+                        time = formatMessageTime(messageItem.timestamp),
+                        isFromMe = messageItem.isFromMe,
+                        isRead = messageItem.isRead
+                    )
+                    MessageBubble(message = message)
+                }
             }
         }
         
@@ -230,18 +228,7 @@ fun InboxScreen(
             IconButton(
                 onClick = { 
                     if (messageText.isNotBlank()) {
-                        val newMessage = Message(
-                            text = messageText,
-                            time = java.text.SimpleDateFormat("hh:mm a").format(java.util.Date()),
-                            isFromMe = true
-                        )
-                        // Add to local list immediately
-                        messages.add(newMessage)
-                        // Save to Firebase
-                        coroutineScope.launch(Dispatchers.IO) {
-                            val key = messagesRef.push().key ?: System.currentTimeMillis().toString()
-                            messagesRef.child(key).setValue(newMessage)
-                        }
+                        viewModel.sendMessage(messageText)
                         messageText = ""
                     }
                 },
@@ -303,10 +290,19 @@ fun MessageBubble(
     }
 }
 
+private fun formatMessageTime(timestamp: Long): String {
+    return SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(timestamp))
+}
+
 @Preview
 @Composable
 fun InboxScreenPreview() {
     SevaLKTheme {
-        InboxScreen()
+        InboxScreen(
+            chatId = "preview_chat",
+            participantId = "preview_participant",
+            contactName = "Mike's Plumbing"
+        )
     }
 }
+

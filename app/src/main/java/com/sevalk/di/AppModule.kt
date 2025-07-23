@@ -2,9 +2,12 @@ package com.sevalk.di
 
 import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sevalk.data.repositories.AuthRepository
 import com.sevalk.data.repositories.AuthRepositoryImpl
+import com.sevalk.data.repositories.ChatRepository
+import com.sevalk.data.repositories.ChatRepositoryImpl
 import com.sevalk.utils.GoogleSignInHelper
 import dagger.Module
 import dagger.Provides
@@ -25,11 +28,27 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideFirebaseDatabase(): FirebaseDatabase {
+        return FirebaseDatabase.getInstance()
+    }
+
+    @Provides
+    @Singleton
     fun provideAuthRepository(
         auth: FirebaseAuth,
         firestore: FirebaseFirestore
     ): AuthRepository {
         return AuthRepositoryImpl(auth, firestore)
+    }
+
+    @Provides
+    @Singleton
+    fun provideChatRepository(
+        auth: FirebaseAuth,
+        database: FirebaseDatabase,
+        firestore: FirebaseFirestore
+    ): ChatRepository {
+        return ChatRepositoryImpl(auth, database, firestore)
     }
     
     @Provides
