@@ -4,7 +4,7 @@ data class Booking(
     val id: String = "",
     val customerId: String = "",
     val providerId: String = "",
-    val providerName: String = "", // Add this field to store provider business name
+    val providerName: String = "", 
     val customerName: String = "",
     val serviceId: String = "",
     val serviceName: String = "",
@@ -17,7 +17,7 @@ data class Booking(
     val status: BookingStatus = BookingStatus.PENDING,
     val priority: BookingPriority = BookingPriority.NORMAL,
     val specialInstructions: String = "",
-    val attachments: List<String> = emptyList(), // Image URLs
+    val attachments: List<String> = emptyList(),
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val acceptedAt: Long? = null,
@@ -25,7 +25,10 @@ data class Booking(
     val completedAt: Long? = null,
     val cancelledAt: Long? = null,
     val cancellationReason: String = "",
-    val timeline: List<BookingTimelineEvent> = emptyList()
+    val timeline: List<BookingTimelineEvent> = emptyList(),
+    val serviceLatitude: Double? = null,
+    val serviceLongitude: Double? = null,
+    val serviceAddress: String = ""
 )
 
 data class BookingPricing(

@@ -118,7 +118,6 @@ fun SetLocationScreen(
                     )
                 }
 
-                // Location Method Selection
                 LocationMethodSection(
                     methods = uiState.locationMethods,
                     onMethodSelected = { methodId ->

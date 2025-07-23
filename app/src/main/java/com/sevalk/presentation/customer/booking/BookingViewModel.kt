@@ -70,6 +70,9 @@ class BookingViewModel @Inject constructor(
         description: String,
         selectedDate: String,
         selectedTime: String,
+        latitude: Double?,
+        longitude: Double?,
+        address: String,
         onSuccess: (String) -> Unit,
         onError: (String) -> Unit
     ) {
@@ -146,7 +149,11 @@ class BookingViewModel @Inject constructor(
                         totalAmount = selectedServiceObj.price?.toDoubleOrNull() ?: 0.0
                     ),
                     status = BookingStatus.PENDING,
-                    specialInstructions = bookingTitle
+                    specialInstructions = bookingTitle,
+                    // Add location data
+                    serviceLatitude = latitude,
+                    serviceLongitude = longitude,
+                    serviceAddress = address
                 )
                 
                 // Save booking to database

@@ -41,8 +41,9 @@ class ServiceProviderRepository @Inject constructor(
                     val firstService = services.firstOrNull()
 
                     val serviceName = firstService?.get("name") as? String
+                    val additionalServicesCount = if (services.size > 1) services.size - 1 else 0
                     
-                    Timber.d("Provider ${document.id} service: $serviceName")
+                    Timber.d("Provider ${document.id} service: $serviceName, additional: $additionalServicesCount")
 
                     val price = firstService?.get("price") as? String ?: "0"
                     
@@ -53,7 +54,7 @@ class ServiceProviderRepository @Inject constructor(
                         latitude = latitude,
                         longitude = longitude,
                         rating = (data["rating"] as? Double)?.toFloat() ?: 0f,
-                        description = data["description"] as? String ?: "",
+                        description = "${serviceName ?: "Service"}${if (additionalServicesCount > 0) " +$additionalServicesCount more" else ""}",
                         hourlyRate = price.toDoubleOrNull() ?: 0.0,
                         phone = data["phone"] as? String ?: "",
                         completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0,
@@ -139,6 +140,7 @@ class ServiceProviderRepository @Inject constructor(
 
                     val firstService = services.firstOrNull()
                     val serviceName = firstService?.get("name") as? String
+                    val additionalServicesCount = if (services.size > 1) services.size - 1 else 0
 
                     val price = firstService?.get("price") as? Long ?: 0L 
                     
@@ -149,7 +151,7 @@ class ServiceProviderRepository @Inject constructor(
                         latitude = latitude,
                         longitude = longitude,
                         rating = (data["rating"] as? Double)?.toFloat() ?: 0f,
-                        description = description,
+                        description = "${serviceName ?: "Service"}${if (additionalServicesCount > 0) " +$additionalServicesCount more" else ""}",
                         phone = data["phone"] as? String ?: "",
                         hourlyRate = price.toDouble(),
                         completedJobs = (data["completedJobs"] as? Long)?.toInt() ?: 0,

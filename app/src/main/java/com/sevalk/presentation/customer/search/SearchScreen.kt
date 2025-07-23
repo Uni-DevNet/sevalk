@@ -259,17 +259,6 @@ fun ProviderInfoCard(
                         )
                         Spacer(modifier = Modifier.width(12.dp))
                         
-                        // Add distance calculation
-                        val distance = if (currentLocation != null) {
-                            val distanceInMeters = calculateDistance(
-                                currentLocation.latitude,
-                                currentLocation.longitude,
-                                provider.latitude,
-                                provider.longitude
-                            )
-                            String.format("%.1f km", distanceInMeters / 1000)
-                        } else "N/A"
-                        
                         Text(
                             text = "• $distance",
                             style = MaterialTheme.typography.bodySmall,
@@ -277,20 +266,21 @@ fun ProviderInfoCard(
                         )
                     }
                     
+                    // Display service name with additional count like "Cleaning (Residential) +5 more"
                     Text(
-                        text = provider.type.displayName,
+                        text = provider.description,
                         style = MaterialTheme.typography.bodySmall,
                         color = Color(0xFF2196F3)
                     )
                 }
                 
                 IconButton(onClick = { isFavorite = !isFavorite }) {
-                Icon(
-                    imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                    contentDescription = "Favorite",
-                    tint = if (isFavorite) Color.Red else Color.Gray
-                )
-            }
+                    Icon(
+                        imageVector = if (isFavorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
+                        contentDescription = "Favorite",
+                        tint = if (isFavorite) Color.Red else Color.Gray
+                    )
+                }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -394,5 +384,3 @@ fun ProviderInfoCard(
         }
     }
 }
-
-

@@ -517,8 +517,11 @@ fun BookingJobCard(
             
             // Job Details
             Column(modifier = Modifier.weight(1f)) {
+                // Show service name with count if multiple services
+                val serviceDisplayText = booking.serviceName
+                
                 Text(
-                    booking.serviceName,
+                    serviceDisplayText,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 14.sp,
                     color = Color.Black
