@@ -17,7 +17,10 @@ sealed class Screen(val route: String) {
             "booking/$providerId/$providerName/$rating/$serviceType"
     }
     object Chat : Screen("chat")
-    object Inbox : Screen("inbox")
+    object Inbox : Screen("inbox/{chatId}/{participantId}/{contactName}") {
+        fun createRoute(chatId: String, participantId: String, contactName: String) = 
+            "inbox/$chatId/$participantId/$contactName"
+    }
     object ProviderProfile : Screen("provider_profile")
     object ProviderHome : Screen("provider_home")
     object ServiceSelection : Screen("service_selection")

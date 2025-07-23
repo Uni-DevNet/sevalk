@@ -1,5 +1,6 @@
 package com.sevalk.presentation.chat
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -16,64 +17,55 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.sevalk.ui.theme.S_YELLOW
 import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.R
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.ValueEventListener
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import com.sevalk.data.repositories.ChatMessageItem
+import com.sevalk.presentation.chat.viewmodel.InboxViewModel
+import com.sevalk.presentation.components.CustomerAvatar
+import com.sevalk.presentation.customer.profile.ImagePickerDialog
+import java.text.SimpleDateFormat
+import java.util.*
 
 data class Message(
+    val id: String,
     val text: String,
+    val imageUrl: String? = null,
+    val messageType: String = "text",
     val time: String,
-    val isFromMe: Boolean
+    val isFromMe: Boolean,
+    val isRead: Boolean = false
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun InboxScreen(
-    contactName: String = "Mike's Plumbing",
-    isOnline: Boolean = true,
+    chatId: String,
+    participantId: String,
+    contactName: String = "Contact",
     onBackClick: () -> Unit = {},
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    viewModel: InboxViewModel = hiltViewModel()
 ) {
     var messageText by remember { mutableStateOf("") }
-    val messages = remember { mutableStateListOf<Message>() }
-    val database = FirebaseDatabase.getInstance()
-    val chatId = remember(contactName) { contactName.replace(" ", "_").lowercase() } // Simple chat id, improve as needed
-    val messagesRef = database.getReference("chats/$chatId/messages")
-    val coroutineScope = rememberCoroutineScope()
+    var showImagePicker by remember { mutableStateOf(false) }
+    val messages by viewModel.messages.collectAsState()
+    val isOnline by viewModel.isOnline.collectAsState()
+    val isLoading by viewModel.isLoading.collectAsState()
 
-    // Listen for messages from Firebase
+    // Initialize the chat
     LaunchedEffect(chatId) {
-        messagesRef.addValueEventListener(object : ValueEventListener {
-            override fun onDataChange(snapshot: DataSnapshot) {
-                val newMessages = mutableListOf<Message>()
-                for (msgSnapshot in snapshot.children) {
-                    val text = msgSnapshot.child("text").getValue(String::class.java) ?: ""
-                    val time = msgSnapshot.child("time").getValue(String::class.java) ?: ""
-                    val isFromMe = when (val value = msgSnapshot.child("fromMe").value) {
-                        is Boolean -> value
-                        is String -> value.toBoolean()
-                        else -> false
-                    }
-                    newMessages.add(Message(text, time, isFromMe))
-                }
-                messages.clear()
-                messages.addAll(newMessages)
-            }
-            override fun onCancelled(error: DatabaseError) {}
-        })
+        viewModel.initializeChat(chatId, participantId)
     }
 
     Column(
@@ -108,8 +100,12 @@ fun InboxScreen(
                 Box(
                     modifier = Modifier
                         .size(40.dp)
-                        .background(Color.Gray.copy(alpha = 0.3f), CircleShape)
-                )
+                ){
+                    CustomerAvatar(
+                        customerId = participantId,
+                        size = 40.dp
+                    )
+                }
                 
                 Column {
                     Text(
@@ -118,13 +114,11 @@ fun InboxScreen(
                         fontWeight = FontWeight.Medium,
                         color = Color.Black
                     )
-                    if (isOnline) {
-                        Text(
-                            text = "Online",
-                            fontSize = 14.sp,
-                            color = Color.Gray
-                        )
-                    }
+                    Text(
+                        text = if (isOnline) "Online" else "Offline",
+                        fontSize = 14.sp,
+                        color = if (isOnline) Color.Green else Color.Gray
+                    )
                 }
             }
             
@@ -156,14 +150,34 @@ fun InboxScreen(
         }
         
         // Messages
-        LazyColumn(
-            modifier = Modifier
-                .weight(1f)
-                .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            items(messages) { message ->
-                MessageBubble(message = message)
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = S_YELLOW)
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .weight(1f)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(messages) { messageItem ->
+                    val message = Message(
+                        id = messageItem.id,
+                        text = messageItem.text,
+                        imageUrl = messageItem.imageUrl,
+                        messageType = messageItem.messageType,
+                        time = formatMessageTime(messageItem.timestamp),
+                        isFromMe = messageItem.isFromMe,
+                        isRead = messageItem.isRead
+                    )
+                    MessageBubble(message = message)
+                }
             }
         }
         
@@ -200,20 +214,20 @@ fun InboxScreen(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        IconButton(
-                            onClick = { /* Handle attachment */ },
-                            modifier = Modifier.size(24.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(id = R.drawable.attachment),
-                                contentDescription = "Attach",
-                                tint = Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+//                        IconButton(
+//                            onClick = { /* Handle attachment */ },
+//                            modifier = Modifier.size(24.dp)
+//                        ) {
+//                            Icon(
+//                                painter = painterResource(id = R.drawable.attachment),
+//                                contentDescription = "Attach",
+//                                tint = Color.Gray,
+//                                modifier = Modifier.size(20.dp)
+//                            )
+//                        }
                         
                         IconButton(
-                            onClick = { /* Handle camera */ },
+                            onClick = { showImagePicker = true },
                             modifier = Modifier.size(24.dp)
                         ) {
                             Icon(
@@ -230,18 +244,7 @@ fun InboxScreen(
             IconButton(
                 onClick = { 
                     if (messageText.isNotBlank()) {
-                        val newMessage = Message(
-                            text = messageText,
-                            time = java.text.SimpleDateFormat("hh:mm a").format(java.util.Date()),
-                            isFromMe = true
-                        )
-                        // Add to local list immediately
-                        messages.add(newMessage)
-                        // Save to Firebase
-                        coroutineScope.launch(Dispatchers.IO) {
-                            val key = messagesRef.push().key ?: System.currentTimeMillis().toString()
-                            messagesRef.child(key).setValue(newMessage)
-                        }
+                        viewModel.sendMessage(messageText)
                         messageText = ""
                     }
                 },
@@ -257,6 +260,17 @@ fun InboxScreen(
                 )
             }
         }
+    }
+    
+    // Show image picker dialog
+    if (showImagePicker) {
+        ImagePickerDialog(
+            onDismiss = { showImagePicker = false },
+            onImageSelected = { imageUri ->
+                viewModel.sendImageMessage(imageUri)
+                showImagePicker = false
+            }
+        )
     }
 }
 
@@ -283,14 +297,44 @@ fun MessageBubble(
                             bottomEnd = if (message.isFromMe) 4.dp else 16.dp
                         )
                     )
-                    .padding(12.dp)
+                    .padding(if (message.messageType == "image") 4.dp else 12.dp)
                     .widthIn(max = 280.dp)
             ) {
-                Text(
-                    text = message.text,
-                    fontSize = 14.sp,
-                    color = if (message.isFromMe) Color.White else Color.Black
-                )
+                when (message.messageType) {
+                    "image" -> {
+                        // Display image message
+                        if (!message.imageUrl.isNullOrEmpty()) {
+                            Column {
+                                AsyncImage(
+                                    model = message.imageUrl,
+                                    contentDescription = "Shared image",
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(max = 200.dp)
+                                        .clip(RoundedCornerShape(12.dp)),
+                                    contentScale = ContentScale.Crop
+                                )
+                                if (message.text.isNotEmpty()) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = message.text,
+                                        fontSize = 14.sp,
+                                        color = if (message.isFromMe) Color.White else Color.Black,
+                                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
+                        }
+                    }
+                    else -> {
+                        // Display text message
+                        Text(
+                            text = message.text,
+                            fontSize = 14.sp,
+                            color = if (message.isFromMe) Color.White else Color.Black
+                        )
+                    }
+                }
             }
             Spacer(modifier = Modifier.height(4.dp))
             Text(
@@ -303,10 +347,19 @@ fun MessageBubble(
     }
 }
 
+private fun formatMessageTime(timestamp: Long): String {
+    return SimpleDateFormat("hh:mm a", Locale.getDefault()).format(Date(timestamp))
+}
+
 @Preview
 @Composable
 fun InboxScreenPreview() {
     SevaLKTheme {
-        InboxScreen()
+        InboxScreen(
+            chatId = "preview_chat",
+            participantId = "preview_participant",
+            contactName = "Mike's Plumbing"
+        )
     }
 }
+

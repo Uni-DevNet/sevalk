@@ -167,7 +167,7 @@ fun HomeScreen(
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Text("📍 ", fontSize = 14.sp)
                     Text(
-                        currentAddress ?: "Weligama, Southern Province",
+                        currentAddress ?: "",
                         color = S_LIGHT_TEXT,
                         fontSize = 14.sp
                     )

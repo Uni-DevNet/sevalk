@@ -4,26 +4,33 @@ import android.app.Application
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.firebase.FirebaseApp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ServerValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import com.sevalk.utils.Constants
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
 import timber.log.Timber
 import javax.inject.Inject
 
 
 @HiltAndroidApp
-class SevaLKApplication : Application() {
-    @Inject
-    lateinit var firebaseAuth: FirebaseAuth
+class SevaLKApplication : Application(), DefaultLifecycleObserver {
 
-    @Inject
-    lateinit var firestore: FirebaseFirestore
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     companion object {
+        private var instance: SevaLKApplication? = null
+        
         var isNetworkAvailable by mutableStateOf(true)
             private set
 
@@ -34,7 +41,13 @@ class SevaLKApplication : Application() {
             private set
 
         fun updateNetworkStatus(isAvailable: Boolean) {
+            val previousStatus = isNetworkAvailable
             isNetworkAvailable = isAvailable
+            
+            // Handle network status change for online user status
+            if (previousStatus != isAvailable && FirebaseAuth.getInstance().currentUser != null) {
+                instance?.handleNetworkStatusChange(isAvailable)
+            }
         }
 
         fun updateCurrentUser(userId: String?) {
@@ -48,7 +61,10 @@ class SevaLKApplication : Application() {
 
 
     override fun onCreate() {
-        super.onCreate()
+        super<Application>.onCreate()
+        
+        // Set the singleton instance
+        instance = this
 
         // Initialize Firebase FIRST - before any dependency injection that might use it
         initializeFirebase()
@@ -59,7 +75,23 @@ class SevaLKApplication : Application() {
         // Setup Firebase listeners
         setupFirebaseListeners()
 
+        // Setup lifecycle observer for online status
+        ProcessLifecycleOwner.get().lifecycle.addObserver(this)
+
         Timber.d("SevaLK Application initialized successfully")
+    }
+
+    override fun onStart(owner: LifecycleOwner) {
+        super<DefaultLifecycleObserver>.onStart(owner)
+        // App comes to foreground - set user online
+        setUserOnlineStatus(true)
+        setupOnDisconnectHandler()
+    }
+
+    override fun onStop(owner: LifecycleOwner) {
+        super<DefaultLifecycleObserver>.onStop(owner)
+        // App goes to background - set user offline
+        setUserOnlineStatus(false)
     }
 
     private fun initializeLogging() {
@@ -102,13 +134,19 @@ class SevaLKApplication : Application() {
 
     private fun setupFirebaseListeners() {
         // Auth state is now handled by AuthStateManager
-        // This is just for logging purposes
+        // This is just for logging purposes and online status management
         FirebaseAuth.getInstance().addAuthStateListener { auth ->
             val user = auth.currentUser
             updateCurrentUser(user?.uid)
 
             if (user != null) {
                 Timber.d("User authenticated: ${user.uid}")
+                // Set user online when they authenticate and setup disconnect handler
+                val isAppInForeground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+                if (isAppInForeground) {
+                    setUserOnlineStatus(true)
+                    setupOnDisconnectHandler()
+                }
             } else {
                 Timber.d("User signed out")
                 // Clean up user-specific data
@@ -127,14 +165,77 @@ class SevaLKApplication : Application() {
     }
 
     override fun onTerminate() {
-        super.onTerminate()
+        super<Application>.onTerminate()
         Timber.d("SevaLK Application terminated")
     }
 
     override fun onLowMemory() {
-        super.onLowMemory()
+        super<Application>.onLowMemory()
         Timber.w("Low memory warning - clearing caches")
         // Clear non-essential caches
         // cacheManager.clearNonEssentialCache()
+    }
+
+    private fun setUserOnlineStatus(isOnline: Boolean) {
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            applicationScope.launch {
+                try {
+                    // Only set online if network is available and user wants to be online
+                    val actualStatus = isOnline && isNetworkAvailable
+                    
+                    val statusData = mapOf(
+                        "isOnline" to actualStatus,
+                        "lastSeen" to System.currentTimeMillis()
+                    )
+                    
+                    FirebaseDatabase.getInstance()
+                        .getReference("user_status")
+                        .child(currentUser.uid)
+                        .setValue(statusData)
+                        
+                    Timber.d("User online status updated: $actualStatus (requested: $isOnline, network: $isNetworkAvailable)")
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to update user online status")
+                }
+            }
+        }
+    }
+
+    fun handleNetworkStatusChange(isNetworkAvailable: Boolean) {
+        val isAppInForeground = ProcessLifecycleOwner.get().lifecycle.currentState.isAtLeast(androidx.lifecycle.Lifecycle.State.STARTED)
+        
+        if (isNetworkAvailable && isAppInForeground) {
+            // Network restored and app is in foreground - set online
+            setUserOnlineStatus(true)
+            setupOnDisconnectHandler()
+        } else if (!isNetworkAvailable) {
+            // Network lost - set offline immediately
+            setUserOnlineStatus(false)
+        }
+        
+        Timber.d("Network status changed: $isNetworkAvailable, app in foreground: $isAppInForeground")
+    }
+
+    private fun setupOnDisconnectHandler() {
+        val currentUser = FirebaseAuth.getInstance().currentUser
+        if (currentUser != null) {
+            try {
+                val statusRef = FirebaseDatabase.getInstance()
+                    .getReference("user_status")
+                    .child(currentUser.uid)
+                
+                // Set up automatic offline status when client disconnects
+                val offlineData = mapOf(
+                    "isOnline" to false,
+                    "lastSeen" to ServerValue.TIMESTAMP
+                )
+                
+                statusRef.onDisconnect().setValue(offlineData)
+                Timber.d("OnDisconnect handler set up for user: ${currentUser.uid}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to setup onDisconnect handler")
+            }
+        }
     }
 }

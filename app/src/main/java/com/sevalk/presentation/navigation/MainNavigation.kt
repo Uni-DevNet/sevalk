@@ -177,7 +177,13 @@ fun MainNavigation(
                     ProviderNavigationTab.MESSAGES -> {
                         ChatScreen(
                             onChatItemClick = { chatItem ->
-                                navController.navigate("inbox/${chatItem.name}")
+                                navController.navigate(
+                                    Screen.Inbox.createRoute(
+                                        chatItem.chatId,
+                                        chatItem.participantId,
+                                        chatItem.name
+                                    )
+                                )
                             }
                         )
                     }
@@ -224,7 +230,13 @@ fun MainNavigation(
                     CustomerNavigationTab.MESSAGES -> {
                         ChatScreen(
                             onChatItemClick = { chatItem ->
-                                navController.navigate("inbox/${chatItem.name}")
+                                navController.navigate(
+                                    Screen.Inbox.createRoute(
+                                        chatItem.chatId,
+                                        chatItem.participantId,
+                                        chatItem.name
+                                    )
+                                )
                             }
                         )
                     }

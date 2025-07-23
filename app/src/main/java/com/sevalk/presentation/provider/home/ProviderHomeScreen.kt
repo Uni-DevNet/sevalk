@@ -214,7 +214,7 @@ fun ProviderHomeScreen(
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("📍 ", fontSize = 14.sp)
                         Text(
-                            currentAddress ?: "Weligama, Southern Province",
+                            currentAddress ?: "",
                             color = Color.Gray,
                             fontSize = 14.sp
                         )

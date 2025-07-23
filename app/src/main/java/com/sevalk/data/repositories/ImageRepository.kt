@@ -34,11 +34,31 @@ class ImageRepository @Inject constructor(
                 val fileName = "profile_${userId}_${UUID.randomUUID()}.jpg"
 
                 // Upload to Supabase
-                val imageUrl = uploadToSupabase(imageBytes, fileName)
+                val imageUrl = uploadToSupabase(imageBytes, fileName, SupabaseClient.PROFILE_IMAGES_BUCKET)
 
                 Result.success(imageUrl)
             } catch (e: Exception) {
                 Log.e("ImageRepository", "Error uploading image", e)
+                Result.failure(e)
+            }
+        }
+    }
+
+    suspend fun uploadChatImage(imageUri: Uri, userId: String): Result<String> {
+        return withContext(Dispatchers.IO) {
+            try {
+                // Convert URI to compressed image bytes
+                val imageBytes = uriToCompressedBytes(imageUri)
+
+                // Generate unique filename
+                val fileName = "chat_${userId}_${UUID.randomUUID()}.jpg"
+
+                // Upload to Supabase
+                val imageUrl = uploadToSupabase(imageBytes, fileName, SupabaseClient.CHAT_IMAGES_BUCKET)
+
+                Result.success(imageUrl)
+            } catch (e: Exception) {
+                Log.e("ImageRepository", "Error uploading chat image", e)
                 Result.failure(e)
             }
         }
@@ -79,9 +99,9 @@ class ImageRepository @Inject constructor(
         return bytes
     }
 
-    private suspend fun uploadToSupabase(imageBytes: ByteArray, fileName: String): String {
+    private suspend fun uploadToSupabase(imageBytes: ByteArray, fileName: String, bucketName: String): String {
         try {
-            val bucket = supabaseClient.client.storage.from(SupabaseClient.PROFILE_IMAGES_BUCKET)
+            val bucket = supabaseClient.client.storage.from(bucketName)
 
             // Upload the file
             bucket.upload(fileName, imageBytes, upsert = true)
