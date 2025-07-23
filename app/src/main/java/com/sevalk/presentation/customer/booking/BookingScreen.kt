@@ -3,8 +3,11 @@ package com.sevalk.presentation.customer.booking
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,6 +18,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.LocationOn
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -27,6 +31,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.*
 import com.sevalk.R
 import com.sevalk.ui.theme.S_YELLOW
 import java.text.SimpleDateFormat
@@ -54,6 +61,10 @@ fun BookingScreen(
     var selectedDate by remember { mutableStateOf("") }
     var selectedTime by remember { mutableStateOf("") }
     var isFavorite by remember { mutableStateOf(false) }
+    var selectedLocation by remember { mutableStateOf<LatLng?>(null) }
+    var locationAddress by remember { mutableStateOf("") }
+    var showLocationPicker by remember { mutableStateOf(false) }
+    var locationSearchQuery by remember { mutableStateOf("") }
 
     var showDatePicker by remember { mutableStateOf(false) }
     var showTimePicker by remember { mutableStateOf(false) }
@@ -243,8 +254,15 @@ fun BookingScreen(
                                     )
                                 }
                                 
+                                val remainingServicesCount = displayServices.size - 1
+                                val serviceDisplayText = if (remainingServicesCount > 0) {
+                                    "${primaryService?.name ?: "Service"} +$remainingServicesCount more"
+                                } else {
+                                    primaryService?.name ?: "Service"
+                                }
+                                
                                 Text(
-                                    text = primaryService?.name ?: "Service",
+                                    text = serviceDisplayText,
                                     color = Color(0xFF2196F3),
                                     fontSize = 12.sp,
                                     modifier = Modifier
@@ -335,8 +353,15 @@ fun BookingScreen(
                                     )
                                 }
                                 
+                                val remainingServicesCount = displayServices.size - 1
+                                val serviceDisplayText = if (remainingServicesCount > 0) {
+                                    "${primaryService?.name ?: "Service"} +$remainingServicesCount more"
+                                } else {
+                                    primaryService?.name ?: "Service"
+                                }
+                                
                                 Text(
-                                    text = primaryService?.name ?: "Service",
+                                    text = serviceDisplayText,
                                     color = Color(0xFF2196F3),
                                     fontSize = 12.sp,
                                     modifier = Modifier
@@ -472,20 +497,31 @@ fun BookingScreen(
                     
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    displayServices.forEach { service ->
-                        ServiceCard(
-                            title = service.name,
-                            subtitle = service.description ?: "Professional ${service.name.lowercase()} services", 
-                            duration = "Based on work",
-                            price = "LKR ${service.price ?: displayPrice}/hr",
-                            isSelected = selectedService == service.name,
-                            onSelect = { selectedService = service.name }
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
+                    // Make services list scrollable using LazyColumn
+                    LazyColumn(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        items(displayServices) { service ->
+                            ServiceCard(
+                                title = service.name,
+                                subtitle = service.description ?: "Professional ${service.name.lowercase()} services", 
+                                duration = "Based on work",
+                                price = "LKR ${service.price ?: displayPrice}/hr",
+                                isSelected = selectedService == service.name,
+                                onSelect = { selectedService = service.name }
+                            )
+                        }
+                        
+                        // Add some bottom padding to ensure the last item is visible
+                        item {
+                            Spacer(modifier = Modifier.height(16.dp))
+                        }
                     }
 
-                    Spacer(modifier = Modifier.weight(1f))
-
+                    // Continue button at the bottom
                     PrimaryButton(
                         text = "Continue to Details",
                         onClick = { selectedTab = 1 },
@@ -564,6 +600,100 @@ fun BookingScreen(
                             color = Color.Black
                         )
                     )
+                    
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    Text(
+                        text = "Service Location",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color.Black
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    // Location Selection Card
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { showLocationPicker = true },
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (selectedLocation != null) Color(0xFFFFF8E1) else Color.White
+                        ),
+                        border = androidx.compose.foundation.BorderStroke(
+                            1.dp, 
+                            if (selectedLocation != null) Color(0xFFFFC107) else Color.Gray.copy(alpha = 0.3f)
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.LocationOn,
+                                contentDescription = "Location",
+                                tint = if (selectedLocation != null) Color(0xFFFFC107) else Color.Gray,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            
+                            Spacer(modifier = Modifier.width(12.dp))
+                            
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = if (selectedLocation != null) "Location Selected" else "Select Service Location",
+                                    fontWeight = FontWeight.Medium,
+                                    fontSize = 14.sp,
+                                    color = Color.Black
+                                )
+                                
+                                if (selectedLocation != null) {
+                                    Text(
+                                        text = locationAddress.ifEmpty { 
+                                            "Lat: ${String.format("%.4f", selectedLocation!!.latitude)}, " +
+                                            "Lng: ${String.format("%.4f", selectedLocation!!.longitude)}"
+                                        },
+                                        fontSize = 12.sp,
+                                        color = Color.Gray,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                } else {
+                                    Text(
+                                        text = "Tap to select where you need the service",
+                                        fontSize = 12.sp,
+                                        color = Color.Gray,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
+                            }
+                            
+                            Icon(
+                                painter = painterResource(id = R.drawable.search),
+                                contentDescription = "Select",
+                                tint = Color.Gray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                    
+                    // Show map picker if requested
+                    if (showLocationPicker) {
+                        Spacer(modifier = Modifier.height(16.dp))
+                        
+                        LocationPickerSection(
+                            searchQuery = locationSearchQuery,
+                            onSearchQueryChange = { locationSearchQuery = it },
+                            selectedLocation = selectedLocation ?: LatLng(6.0329, 80.2168), // Default to Colombo
+                            onLocationSelected = { location, address ->
+                                selectedLocation = location
+                                locationAddress = address
+                                showLocationPicker = false
+                            },
+                            onCancel = { showLocationPicker = false }
+                        )
+                    }
                     
                     Spacer(modifier = Modifier.height(24.dp))
 
@@ -667,7 +797,7 @@ fun BookingScreen(
                     PrimaryButton(
                         text = "Confirm Booking",
                         onClick = { 
-                            Timber.d("Creating booking with: service=$selectedService, title=$bookingTitle, date=$selectedDate, time=$selectedTime")
+                            Timber.d("Creating booking with location: $selectedLocation")
                             viewModel.createBooking(
                                 selectedService = selectedService,
                                 bookingTitle = bookingTitle,
@@ -676,11 +806,11 @@ fun BookingScreen(
                                 selectedTime = selectedTime,
                                 onSuccess = { bookingId ->
                                     Timber.d("Booking creation success callback called with ID: $bookingId")
-                                    // Navigation will be handled by LaunchedEffect above
+                                    // TODO: Store location data separately if needed
+                                    // Location: $selectedLocation, Address: $locationAddress
                                 },
                                 onError = { errorMessage ->
                                     Timber.e("Booking creation failed: $errorMessage")
-                                    // TODO: Show error message to user (implement snackbar or dialog)
                                 }
                             )
                         },
@@ -809,5 +939,127 @@ private fun ServiceCard(
                 color = Color.Black
             )
         }
+    }
+}
+
+@Composable
+private fun LocationPickerSection(
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
+    selectedLocation: LatLng,
+    onLocationSelected: (LatLng, String) -> Unit,
+    onCancel: () -> Unit
+) {
+    var currentSelectedLocation by remember { mutableStateOf(selectedLocation) }
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(selectedLocation, 15f)
+    }
+
+    Column(
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "Select Service Location on Map",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Medium,
+            color = Color.Black
+        )
+        
+        // Map with Search Bar overlay
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(250.dp)
+                .clip(RoundedCornerShape(12.dp))
+        ) {
+            // Google Map
+            GoogleMap(
+                modifier = Modifier.fillMaxSize(),
+                cameraPositionState = cameraPositionState,
+                onMapClick = { clickedLocation ->
+                    currentSelectedLocation = clickedLocation
+                }
+            ) {
+                Marker(
+                    state = MarkerState(position = currentSelectedLocation),
+                    title = "Service Location",
+                    snippet = "Selected location for service"
+                )
+            }
+            
+            // Search Bar positioned at top of map
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = onSearchQueryChange,
+                placeholder = { 
+                    Text(
+                        text = "Search location...",
+                        color = Color.Gray
+                    )
+                },
+                leadingIcon = { 
+                    Icon(
+                        modifier = Modifier.size(20.dp),
+                        painter = painterResource(id = R.drawable.search), 
+                        tint = Color.Gray, 
+                        contentDescription = "Search Icon"
+                    ) 
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp)
+                    .align(Alignment.TopCenter),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color(0xFFFFC107),
+                    unfocusedBorderColor = Color.LightGray,
+                    cursorColor = Color(0xFFFFC107),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
+                ),
+                shape = RoundedCornerShape(8.dp)
+            )
+        }
+        
+        // Location coordinates display
+        Text(
+            text = "Lat: ${String.format("%.6f", currentSelectedLocation.latitude)}, Lng: ${String.format("%.6f", currentSelectedLocation.longitude)}",
+            fontSize = 12.sp,
+            color = Color.Gray
+        )
+        
+        // Action buttons
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            OutlinedButton(
+                onClick = onCancel,
+                modifier = Modifier.weight(1f),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = Color.Gray
+                ),
+                border = BorderStroke(1.dp, Color.Gray.copy(alpha = 0.5f))
+            ) {
+                Text("Cancel")
+            }
+            
+            PrimaryButton(
+                text = "Confirm Location",
+                onClick = { 
+                    onLocationSelected(currentSelectedLocation, "") 
+                },
+                backgroundColor = S_YELLOW,
+                foregroundColor = Color.White,
+                modifier = Modifier.weight(1f)
+            )
+        }
+        
+        Text(
+            text = "Tap on the map to set the exact location where you need the service",
+            fontSize = 12.sp,
+            color = Color.Gray,
+            textAlign = TextAlign.Center,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
