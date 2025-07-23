@@ -1,5 +1,6 @@
 package com.sevalk.presentation.chat
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +25,8 @@ import com.sevalk.ui.theme.SevaLKTheme
 import com.sevalk.R
 import com.sevalk.data.repositories.ChatConversationItem
 import com.sevalk.presentation.chat.viewmodel.ChatViewModel
+import com.sevalk.presentation.components.CustomerAvatar
+import timber.log.Timber
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -121,11 +124,17 @@ fun ChatScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 items(conversations) { conversation ->
+                    val lastMessageText = when {
+                        conversation.lastMessage == null -> "No messages yet"
+                        conversation.lastMessage.messageType == "image" -> "📷 Photo"
+                        else -> conversation.lastMessage.text
+                    }
+
                     val chatItem = ChatItem(
                         chatId = conversation.chatId,
                         participantId = conversation.participantId,
                         name = conversation.participantName,
-                        message = conversation.lastMessage?.text ?: "No messages yet",
+                        message = lastMessageText,
                         time = formatTime(conversation.lastMessage?.timestamp ?: conversation.updatedAt),
                         unreadCount = conversation.unreadCount,
                         isOnline = conversation.isOnline
@@ -168,13 +177,15 @@ fun ChatItemRow(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Avatar
+        // Avatar with CustomerAvatar component
         Box(
-            modifier = Modifier
-                .size(50.dp)
-                .background(Color.Gray.copy(alpha = 0.3f), CircleShape),
-            contentAlignment = Alignment.Center
+            modifier = Modifier.size(50.dp)
         ) {
+            CustomerAvatar(
+                customerId = chatItem.participantId,
+                size = 50.dp
+            )
+            
             // Online indicator
             if (chatItem.isOnline) {
                 Box(

@@ -37,7 +37,9 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.google.android.gms.maps.model.LatLng
+import com.sevalk.presentation.components.CustomerAvatar
 import com.sevalk.presentation.components.map.calculateDistance
+import timber.log.Timber
 
 
 @Composable
@@ -220,17 +222,11 @@ fun ProviderInfoCard(
                 Box(
                     modifier = Modifier
                         .size(60.dp)
-                        .background(
-                            Color.Gray.copy(alpha = 0.2f),
-                            CircleShape
-                        ),
-                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Default.Person,
-                        contentDescription = "Profile",
-                        tint = Color.Gray,
-                        modifier = Modifier.size(30.dp)
+                    CustomerAvatar(
+                        customerId = provider.id,
+                        isProvider = true,
+                        size = 60.dp
                     )
                 }
                 

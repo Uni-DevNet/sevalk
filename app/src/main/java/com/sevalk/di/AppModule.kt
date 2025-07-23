@@ -8,6 +8,7 @@ import com.sevalk.data.repositories.AuthRepository
 import com.sevalk.data.repositories.AuthRepositoryImpl
 import com.sevalk.data.repositories.ChatRepository
 import com.sevalk.data.repositories.ChatRepositoryImpl
+import com.sevalk.data.repositories.ImageRepository
 import com.sevalk.utils.GoogleSignInHelper
 import dagger.Module
 import dagger.Provides
@@ -46,9 +47,10 @@ object AppModule {
     fun provideChatRepository(
         auth: FirebaseAuth,
         database: FirebaseDatabase,
-        firestore: FirebaseFirestore
+        firestore: FirebaseFirestore,
+        imageRepository: ImageRepository
     ): ChatRepository {
-        return ChatRepositoryImpl(auth, database, firestore)
+        return ChatRepositoryImpl(auth, database, firestore, imageRepository)
     }
     
     @Provides
