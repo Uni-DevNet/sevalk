@@ -1,5 +1,6 @@
 package com.sevalk.presentation.customer.booking
 
+import android.location.Geocoder
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -31,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.google.android.gms.location.LocationServices
 import com.google.android.gms.maps.model.CameraPosition
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.*
@@ -43,6 +45,8 @@ import com.sevalk.presentation.components.common.PrimaryButton
 import com.sevalk.presentation.components.common.PrimaryButtonStyle
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
+import androidx.compose.ui.platform.LocalContext
+import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -804,10 +808,11 @@ fun BookingScreen(
                                 description = description,
                                 selectedDate = selectedDate,
                                 selectedTime = selectedTime,
+                                latitude = selectedLocation?.latitude,
+                                longitude = selectedLocation?.longitude,
+                                address = locationAddress,
                                 onSuccess = { bookingId ->
-                                    Timber.d("Booking creation success callback called with ID: $bookingId")
-                                    // TODO: Store location data separately if needed
-                                    // Location: $selectedLocation, Address: $locationAddress
+                                    Timber.d("Booking creation success with ID: $bookingId")
                                 },
                                 onError = { errorMessage ->
                                     Timber.e("Booking creation failed: $errorMessage")
@@ -951,8 +956,48 @@ private fun LocationPickerSection(
     onCancel: () -> Unit
 ) {
     var currentSelectedLocation by remember { mutableStateOf(selectedLocation) }
+    var currentAddress by remember { mutableStateOf<String?>(null) }
+    var initialMapPosition by remember { mutableStateOf<LatLng?>(null) }
+    val context = LocalContext.current
+    val fusedLocationClient = remember { LocationServices.getFusedLocationProviderClient(context) }
+    
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(selectedLocation, 15f)
+    }
+
+    // Get user's current location when component mounts
+    LaunchedEffect(Unit) {
+        try {
+            fusedLocationClient.lastLocation.addOnSuccessListener { location ->
+                location?.let {
+                    val userLocation = LatLng(it.latitude, it.longitude)
+                    // Only set initial position if no location was previously selected
+                    if (selectedLocation == LatLng(6.0329, 80.2168)) {
+                        initialMapPosition = userLocation
+                        currentSelectedLocation = userLocation
+                        cameraPositionState.position = CameraPosition.fromLatLngZoom(userLocation, 15f)
+                    }
+                }
+            }
+        } catch (e: SecurityException) {
+            Timber.e(e, "Location permission not granted")
+        }
+    }
+
+    // Get address for selected location
+    LaunchedEffect(currentSelectedLocation) {
+        try {
+            val geocoder = Geocoder(context, Locale.getDefault())
+            val addresses = geocoder.getFromLocation(
+                currentSelectedLocation.latitude,
+                currentSelectedLocation.longitude,
+                1
+            )
+            currentAddress = addresses?.firstOrNull()?.getAddressLine(0)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to get address")
+            currentAddress = null
+        }
     }
 
     Column(
@@ -965,69 +1010,69 @@ private fun LocationPickerSection(
             color = Color.Black
         )
         
-        // Map with Search Bar overlay
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(250.dp)
                 .clip(RoundedCornerShape(12.dp))
         ) {
-            // Google Map
             GoogleMap(
                 modifier = Modifier.fillMaxSize(),
                 cameraPositionState = cameraPositionState,
+                properties = MapProperties(
+                    isMyLocationEnabled = true,
+                    mapType = MapType.NORMAL
+                ),
+                uiSettings = MapUiSettings(
+                    myLocationButtonEnabled = true,
+                    zoomControlsEnabled = true,
+                    mapToolbarEnabled = false
+                ),
                 onMapClick = { clickedLocation ->
                     currentSelectedLocation = clickedLocation
+                    cameraPositionState.position = CameraPosition.fromLatLngZoom(
+                        clickedLocation,
+                        cameraPositionState.position.zoom
+                    )
                 }
             ) {
+                // Show marker at selected location
                 Marker(
                     state = MarkerState(position = currentSelectedLocation),
-                    title = "Service Location",
-                    snippet = "Selected location for service"
+                    title = "Selected Location",
+                    snippet = currentAddress ?: "Service will be provided here",
+                    icon = BitmapDescriptorFactory.defaultMarker(BitmapDescriptorFactory.HUE_RED)
                 )
             }
+        }
+
+        Column(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalAlignment = Alignment.Start
+        ) {
+            Text(
+                text = "Selected Service Location:",
+                fontSize = 14.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black
+            )
+            Text(
+                text = currentAddress ?: "Loading address...",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 4.dp)
+            )
             
-            // Search Bar positioned at top of map
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = onSearchQueryChange,
-                placeholder = { 
-                    Text(
-                        text = "Search location...",
-                        color = Color.Gray
-                    )
-                },
-                leadingIcon = { 
-                    Icon(
-                        modifier = Modifier.size(20.dp),
-                        painter = painterResource(id = R.drawable.search), 
-                        tint = Color.Gray, 
-                        contentDescription = "Search Icon"
-                    ) 
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(12.dp)
-                    .align(Alignment.TopCenter),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = Color(0xFFFFC107),
-                    unfocusedBorderColor = Color.LightGray,
-                    cursorColor = Color(0xFFFFC107),
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                ),
-                shape = RoundedCornerShape(8.dp)
+            // Show coordinates for verification
+            Text(
+                text = "Lat: ${String.format("%.6f", currentSelectedLocation.latitude)}, " +
+                      "Lng: ${String.format("%.6f", currentSelectedLocation.longitude)}",
+                fontSize = 12.sp,
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 2.dp)
             )
         }
-        
-        // Location coordinates display
-        Text(
-            text = "Lat: ${String.format("%.6f", currentSelectedLocation.latitude)}, Lng: ${String.format("%.6f", currentSelectedLocation.longitude)}",
-            fontSize = 12.sp,
-            color = Color.Gray
-        )
-        
-        // Action buttons
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
@@ -1045,21 +1090,28 @@ private fun LocationPickerSection(
             
             PrimaryButton(
                 text = "Confirm Location",
-                onClick = { 
-                    onLocationSelected(currentSelectedLocation, "") 
+                onClick = {
+                    // Save selected location and address when confirming
+                    onLocationSelected(
+                        currentSelectedLocation,
+                        currentAddress ?: ""
+                    )
                 },
                 backgroundColor = S_YELLOW,
                 foregroundColor = Color.White,
                 modifier = Modifier.weight(1f)
             )
         }
-        
-        Text(
-            text = "Tap on the map to set the exact location where you need the service",
-            fontSize = 12.sp,
-            color = Color.Gray,
-            textAlign = TextAlign.Center,
-            modifier = Modifier.fillMaxWidth()
-        )
     }
+}
+
+private fun calculateDistance(
+    lat1: Double,
+    lon1: Double,
+    lat2: Double,
+    lon2: Double
+): Float {
+    val results = FloatArray(1)
+    android.location.Location.distanceBetween(lat1, lon1, lat2, lon2, results)
+    return results[0]
 }

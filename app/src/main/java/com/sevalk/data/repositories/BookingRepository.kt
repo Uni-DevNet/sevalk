@@ -202,19 +202,14 @@ class BookingRepositoryImpl @Inject constructor(
             "id" to booking.id,
             "customerId" to booking.customerId,
             "providerId" to booking.providerId,
-            "providerName" to booking.providerName, // Add this line
+            "providerName" to booking.providerName,
             "serviceId" to booking.serviceId,
             "customerName" to booking.customerName,
             "serviceName" to booking.serviceName,
             "description" to booking.description,
-            "serviceLocation" to mapOf(
-                "address" to booking.serviceLocation.address,
-                "city" to booking.serviceLocation.city,
-                "province" to booking.serviceLocation.province,
-                "country" to booking.serviceLocation.country,
-                "latitude" to booking.serviceLocation.latitude,
-                "longitude" to booking.serviceLocation.longitude
-            ),
+            "serviceLatitude" to (booking.serviceLatitude ?: 0.0),
+            "serviceLongitude" to (booking.serviceLongitude ?: 0.0),
+            "serviceAddress" to booking.serviceAddress,
             "scheduledDate" to booking.scheduledDate,
             "scheduledTime" to booking.scheduledTime,
             "estimatedDuration" to booking.estimatedDuration,
@@ -243,61 +238,32 @@ class BookingRepositoryImpl @Inject constructor(
     
     private fun mapToBooking(data: Map<String, Any>): Booking {
         try {
-            // Parse service location
-            val locationData = data["serviceLocation"] as? Map<String, Any> ?: emptyMap()
-            val serviceLocation = com.sevalk.data.models.ServiceLocation(
-                address = locationData["address"] as? String ?: "",
-                city = locationData["city"] as? String ?: "",
-                province = locationData["province"] as? String ?: "",
-                country = locationData["country"] as? String ?: "Sri Lanka",
-                latitude = (locationData["latitude"] as? Number)?.toDouble() ?: 0.0,
-                longitude = (locationData["longitude"] as? Number)?.toDouble() ?: 0.0
-            )
-            
-            // Parse pricing
-            val pricingData = data["pricing"] as? Map<String, Any> ?: emptyMap()
-            val pricing = BookingPricing(
-                basePrice = (pricingData["basePrice"] as? Number)?.toDouble() ?: 0.0,
-                totalAmount = (pricingData["totalAmount"] as? Number)?.toDouble() ?: 0.0,
-                paymentStatus = try {
-                    com.sevalk.data.models.PaymentStatus.valueOf(
-                        pricingData["paymentStatus"] as? String ?: "PENDING"
-                    )
-                } catch (e: Exception) {
-                    com.sevalk.data.models.PaymentStatus.PENDING
-                }
-            )
-            
-            // Parse timeline
-            val timelineData = data["timeline"] as? List<Map<String, Any>> ?: emptyList()
-            val timeline = timelineData.map { eventData ->
-                BookingTimelineEvent(
-                    id = eventData["id"] as? String ?: UUID.randomUUID().toString(),
-                    event = try {
-                        BookingEvent.valueOf(eventData["event"] as? String ?: "CREATED")
-                    } catch (e: Exception) {
-                        BookingEvent.CREATED
-                    },
-                    timestamp = (eventData["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
-                    description = eventData["description"] as? String ?: "",
-                    performedBy = eventData["performedBy"] as? String ?: ""
-                )
-            }
-            
             return Booking(
                 id = data["id"] as? String ?: "",
                 customerId = data["customerId"] as? String ?: "",
                 providerId = data["providerId"] as? String ?: "",
-                providerName = data["providerName"] as? String ?: "", // Add this line
+                providerName = data["providerName"] as? String ?: "",
                 customerName = data["customerName"] as? String ?: "",
                 serviceId = data["serviceId"] as? String ?: "",
                 serviceName = data["serviceName"] as? String ?: "",
                 description = data["description"] as? String ?: "",
-                serviceLocation = serviceLocation,
+                serviceLatitude = (data["serviceLatitude"] as? Number)?.toDouble(),
+                serviceLongitude = (data["serviceLongitude"] as? Number)?.toDouble(),
+                serviceAddress = data["serviceAddress"] as? String ?: "",
                 scheduledDate = (data["scheduledDate"] as? Number)?.toLong() ?: 0L,
                 scheduledTime = data["scheduledTime"] as? String ?: "",
                 estimatedDuration = ((data["estimatedDuration"] as? Number)?.toInt() ?: 60).toString(),
-                pricing = pricing,
+                pricing = BookingPricing(
+                    basePrice = (data["pricing"] as? Map<String, Any>)?.get("basePrice") as? Double ?: 0.0,
+                    totalAmount = (data["pricing"] as? Map<String, Any>)?.get("totalAmount") as? Double ?: 0.0,
+                    paymentStatus = try {
+                        com.sevalk.data.models.PaymentStatus.valueOf(
+                            (data["pricing"] as? Map<String, Any>)?.get("paymentStatus") as? String ?: "PENDING"
+                        )
+                    } catch (e: Exception) {
+                        com.sevalk.data.models.PaymentStatus.PENDING
+                    }
+                ),
                 status = try {
                     BookingStatus.valueOf(data["status"] as? String ?: "PENDING")
                 } catch (e: Exception) {
@@ -314,7 +280,19 @@ class BookingRepositoryImpl @Inject constructor(
                 attachments = (data["attachments"] as? List<String>) ?: emptyList(),
                 createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
                 updatedAt = (data["updatedAt"] as? Number)?.toLong() ?: 0L,
-                timeline = timeline
+                timeline = (data["timeline"] as? List<Map<String, Any>>)?.map { eventData ->
+                    BookingTimelineEvent(
+                        id = eventData["id"] as? String ?: UUID.randomUUID().toString(),
+                        event = try {
+                            BookingEvent.valueOf(eventData["event"] as? String ?: "CREATED")
+                        } catch (e: Exception) {
+                            BookingEvent.CREATED
+                        },
+                        timestamp = (eventData["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        description = eventData["description"] as? String ?: "",
+                        performedBy = eventData["performedBy"] as? String ?: ""
+                    )
+                } ?: emptyList()
             )
         } catch (e: Exception) {
             Timber.e(e, "Error mapping booking data: $data")
@@ -323,8 +301,9 @@ class BookingRepositoryImpl @Inject constructor(
                 id = data["id"] as? String ?: "",
                 customerId = data["customerId"] as? String ?: "",
                 providerId = data["providerId"] as? String ?: "",
-                providerName = data["providerName"] as? String ?: "", // Add this line
-                serviceName = data["serviceName"] as? String ?: "Unknown Service",
+                serviceLatitude = (data["serviceLatitude"] as? Number)?.toDouble(),
+                serviceLongitude = (data["serviceLongitude"] as? Number)?.toDouble(),
+                serviceAddress = data["serviceAddress"] as? String ?: "",
                 status = BookingStatus.PENDING,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()

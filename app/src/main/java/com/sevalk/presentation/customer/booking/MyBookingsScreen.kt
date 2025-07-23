@@ -39,9 +39,9 @@ fun MyBookingsScreen(
     val isLoading by viewModel.isLoading.collectAsState()
     val error by viewModel.error.collectAsState()
     val selectedFilter by viewModel.selectedFilter.collectAsState()
-    
-    val filters = listOf("All", "Pending", "Accepted", "Unpaid", "Completed")
-    
+
+    val filters = listOf("All", "Pending", "Accepted", "In Progress", "Completed")
+
     // Filter bookings based on selected filter
     val filteredBookings = remember(bookings, selectedFilter) {
         when (selectedFilter) {
@@ -50,7 +50,7 @@ fun MyBookingsScreen(
             "Accepted" -> bookings.filter { 
                 it.status == BookingStatus.ACCEPTED || it.status == BookingStatus.CONFIRMED 
             }
-            "Unpaid" -> bookings.filter { 
+            "In Progress" -> bookings.filter {
                 it.status == BookingStatus.IN_PROGRESS
             }
             "Completed" -> bookings.filter { 
