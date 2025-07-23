@@ -387,9 +387,11 @@ fun HomeScreen(
     }
 
     // Handle existing service provider account - switch to provider mode
-    LaunchedEffect(serviceProviderCheckState.hasServiceProviderAccount) {
-        if (serviceProviderCheckState.hasServiceProviderAccount == true && !serviceProviderCheckState.showJoinDialog) {
+    // Only switch when explicitly requested via the shouldNavigateToProvider flag
+    LaunchedEffect(serviceProviderCheckState.shouldNavigateToProvider) {
+        if (serviceProviderCheckState.shouldNavigateToProvider) {
             onSwitchToProvider?.invoke()
+            serviceProviderCheckViewModel.clearNavigationFlag()
         }
     }
 

@@ -16,7 +16,8 @@ data class ServiceProviderCheckState(
     val hasServiceProviderAccount: Boolean? = null,
     val showJoinDialog: Boolean = false,
     val error: String? = null,
-    val serviceProviderCreated: Boolean = false
+    val serviceProviderCreated: Boolean = false,
+    val shouldNavigateToProvider: Boolean = false
 )
 
 @HiltViewModel
@@ -48,6 +49,7 @@ class ServiceProviderCheckViewModel @Inject constructor(
                             isLoading = false,
                             hasServiceProviderAccount = exists,
                             showJoinDialog = !exists,
+                            shouldNavigateToProvider = exists,
                             error = null
                         )
                         Timber.d("Service provider check completed. Exists: $exists")
@@ -120,6 +122,10 @@ class ServiceProviderCheckViewModel @Inject constructor(
     
     fun clearError() {
         _uiState.value = _uiState.value.copy(error = null)
+    }
+    
+    fun clearNavigationFlag() {
+        _uiState.value = _uiState.value.copy(shouldNavigateToProvider = false)
     }
     
     fun resetState() {
