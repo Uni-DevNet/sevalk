@@ -23,7 +23,8 @@ interface BookingRepository {
 }
 
 class BookingRepositoryImpl @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val notificationRepository: NotificationRepository
 ) : BookingRepository {
     
     override suspend fun createBooking(booking: Booking): Result<String> {
@@ -50,6 +51,20 @@ class BookingRepositoryImpl @Inject constructor(
                 .document(bookingId)
                 .set(bookingData)
                 .await()
+            
+            // Send notification to service provider
+            try {
+                notificationRepository.sendBookingNotification(
+                    providerId = booking.providerId,
+                    customerName = booking.customerName,
+                    serviceName = booking.serviceName,
+                    bookingId = bookingId
+                )
+                Timber.d("Booking notification sent to provider: ${booking.providerId}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to send booking notification, but booking was created")
+                // Don't fail the booking creation if notification fails
+            }
             
             Timber.d("Booking created successfully with ID: $bookingId")
             Result.success(bookingId)
@@ -85,6 +100,20 @@ class BookingRepositoryImpl @Inject constructor(
     
     override suspend fun updateBookingStatus(bookingId: String, status: BookingStatus): Result<Unit> {
         return try {
+            // First get the booking to get customer and service info
+            val bookingDoc = firestore.collection(Constants.COLLECTION_BOOKINGS)
+                .document(bookingId)
+                .get()
+                .await()
+            
+            if (!bookingDoc.exists()) {
+                return Result.failure(Exception("Booking not found"))
+            }
+            
+            val bookingData = bookingDoc.data!!
+            val customerId = bookingData["customerId"] as? String ?: ""
+            val serviceName = bookingData["serviceName"] as? String ?: "Service"
+            
             val updates = mapOf(
                 "status" to status.name,
                 "updatedAt" to System.currentTimeMillis()
@@ -94,6 +123,22 @@ class BookingRepositoryImpl @Inject constructor(
                 .document(bookingId)
                 .update(updates)
                 .await()
+            
+            // Send notification to customer about status update
+            if (customerId.isNotEmpty()) {
+                try {
+                    notificationRepository.sendBookingStatusUpdate(
+                        customerId = customerId,
+                        status = status.name.lowercase().replace("_", " "),
+                        serviceName = serviceName,
+                        bookingId = bookingId
+                    )
+                    Timber.d("Booking status notification sent to customer: $customerId")
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to send booking status notification")
+                    // Don't fail the status update if notification fails
+                }
+            }
             
             Result.success(Unit)
         } catch (e: Exception) {

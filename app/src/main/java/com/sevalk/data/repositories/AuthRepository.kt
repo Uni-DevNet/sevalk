@@ -51,6 +51,7 @@ interface AuthRepository {
     suspend fun getServiceProviderServices(providerId: String): Result<List<Service>>
     suspend fun checkServiceProviderExists(userId: String): Result<Boolean>
     suspend fun createServiceProviderFromCustomer(userId: String): Result<Unit>
+    suspend fun updateFCMToken(userId: String, token: String): Result<Unit>
 }
 
 class AuthRepositoryImpl @Inject constructor(
@@ -576,7 +577,31 @@ class AuthRepositoryImpl @Inject constructor(
                 }.start()
             }
         }
+
+    override suspend fun updateFCMToken(userId: String, token: String): Result<Unit> {
+        return try {
+            // Update user document with new FCM token
+            firestore.collection(Constants.COLLECTION_USERS)
+                .document(userId)
+                .update(
+                    mapOf(
+                        "fcmToken" to token,
+                        "updatedAt" to System.currentTimeMillis()
+                    )
+                )
+                .await()
+
+            Timber.d("FCM token updated for user: $userId")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Failed to update FCM token for user: $userId")
+            Result.failure(e)
+        }
     }
+}
+
+
+
 
 
 

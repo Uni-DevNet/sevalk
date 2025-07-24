@@ -4,11 +4,16 @@ import android.content.Context
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.messaging.FirebaseMessaging
 import com.sevalk.data.repositories.AuthRepository
 import com.sevalk.data.repositories.AuthRepositoryImpl
+import com.sevalk.data.repositories.BookingRepository
+import com.sevalk.data.repositories.BookingRepositoryImpl
 import com.sevalk.data.repositories.ChatRepository
 import com.sevalk.data.repositories.ChatRepositoryImpl
 import com.sevalk.data.repositories.ImageRepository
+import com.sevalk.data.repositories.NotificationRepository
+import com.sevalk.data.repositories.NotificationRepositoryImpl
 import com.sevalk.utils.GoogleSignInHelper
 import dagger.Module
 import dagger.Provides
@@ -31,6 +36,12 @@ object AppModule {
     @Singleton
     fun provideFirebaseDatabase(): FirebaseDatabase {
         return FirebaseDatabase.getInstance()
+    }
+    
+    @Provides
+    @Singleton
+    fun provideFirebaseMessaging(): FirebaseMessaging {
+        return FirebaseMessaging.getInstance()
     }
 
     @Provides

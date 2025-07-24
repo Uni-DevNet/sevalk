@@ -14,7 +14,7 @@ data class User(
     val isActive: Boolean = true,
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
-    val deviceTokens: List<String> = emptyList(), // For push notifications
+    val fcmToken: String = "", // For push notifications
     val preferences: UserPreferences = UserPreferences()
 ) {
     companion object {
