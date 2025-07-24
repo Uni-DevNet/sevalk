@@ -148,4 +148,5 @@ dependencies {
 
     // Coil for AsyncImage
     implementation("io.coil-kt:coil-compose:2.5.0")
+    implementation("com.google.firebase:firebase-messaging-ktx:23.4.0")
 }

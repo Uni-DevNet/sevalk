@@ -9,6 +9,8 @@ import com.sevalk.data.repositories.BookingRepositoryImpl
 import com.sevalk.data.repositories.UserRepository
 import com.sevalk.data.repositories.UserRepositoryImpl
 import com.sevalk.data.repositories.AuthRepository
+import com.sevalk.data.repositories.NotificationRepository
+import com.sevalk.data.repositories.NotificationRepositoryImpl
 import dagger.Binds
 import dagger.Module
 import dagger.hilt.InstallIn
@@ -30,6 +32,12 @@ abstract class RepositoryModule {
     abstract fun bindUserRepository(
         userRepositoryImpl: UserRepositoryImpl
     ): UserRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(
+        notificationRepositoryImpl: NotificationRepositoryImpl
+    ): NotificationRepository
 
     companion object {
         @Provides
