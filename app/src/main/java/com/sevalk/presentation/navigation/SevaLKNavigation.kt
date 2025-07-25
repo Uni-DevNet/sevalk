@@ -7,7 +7,6 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import com.sevalk.domain.payment.PaymentViewModel
 import androidx.navigation.navArgument
 import com.sevalk.presentation.auth.google.UserTypeSelectionScreen
 import com.sevalk.presentation.auth.login.LoginScreen
@@ -28,7 +27,7 @@ import com.sevalk.presentation.provider.profile.ProviderProfile
 import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 import com.sevalk.presentation.provider.home.ProviderHomeScreen
 import com.sevalk.presentation.provider.service.ServiceSelectionScreen
-import com.sevalk.presentation.customer.payment.PaymentScreen
+import com.sevalk.presentation.customer.payment.StripePaymentScreen
 import com.sevalk.presentation.customer.payment.PaymentSuccessScreen
 import com.sevalk.presentation.splash.SplashScreen
 import com.sevalk.presentation.customer.settings.FavoritesScreen
@@ -267,7 +266,8 @@ fun SevaLKNavigation(
         // Shared Screens
         composable(Screen.Chat.route) {
             MainNavigation(
-                navController = navController
+                navController = navController,
+                initialTab = "MESSAGE"
             )
         }
 
@@ -302,25 +302,30 @@ fun SevaLKNavigation(
             )
         }
 
-        composable("payment/{bookingId}") { backStackEntry ->
+        composable("stripe_payment/{bookingId}") { backStackEntry ->
             val bookingId = backStackEntry.arguments?.getString("bookingId") ?: ""
-            val paymentViewModel = hiltViewModel<PaymentViewModel>()
-            PaymentScreen(
-                viewModel = paymentViewModel,
+            StripePaymentScreen(
+                bookingId = bookingId,
                 onBackClick = {
                     navController.popBackStack()
                 },
-                onPaymentSuccess = {
-                    navController.navigate("payment_success") {
-                        popUpTo("payment") { inclusive = true }
+                onPaymentSuccess = { amount ->
+                    navController.navigate("payment_success/${amount}") {
+                        popUpTo("stripe_payment") { inclusive = true }
                     }
                 }
             )
         }
         
-        composable("payment_success") {
+        composable(
+            route = "payment_success/{amount}",
+            arguments = listOf(
+                navArgument("amount") { type = NavType.StringType }
+            )
+        ) { backStackEntry ->
+            val amount = backStackEntry.arguments?.getString("amount")?.toDoubleOrNull() ?: 0.0
             PaymentSuccessScreen(
-                amount = 2500.0,
+                amount = amount,
                 onBackToHome = {
                     navController.navigate("home") {
                         popUpTo(0) { inclusive = true }
@@ -329,6 +334,4 @@ fun SevaLKNavigation(
             )
         }
     }
-
-
 }

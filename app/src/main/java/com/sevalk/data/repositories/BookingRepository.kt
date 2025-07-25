@@ -1,11 +1,13 @@
 package com.sevalk.data.repositories
 
 import com.google.firebase.firestore.FirebaseFirestore
+import com.sevalk.data.models.AdditionalCharge
 import com.sevalk.data.models.Booking
 import com.sevalk.data.models.BookingEvent
 import com.sevalk.data.models.BookingPricing
 import com.sevalk.data.models.BookingStatus
 import com.sevalk.data.models.BookingTimelineEvent
+import com.sevalk.data.models.ServiceLocation
 import com.sevalk.utils.Constants
 import kotlinx.coroutines.tasks.await
 import timber.log.Timber
@@ -23,7 +25,8 @@ interface BookingRepository {
 }
 
 class BookingRepositoryImpl @Inject constructor(
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val notificationRepository: NotificationRepository
 ) : BookingRepository {
     
     override suspend fun createBooking(booking: Booking): Result<String> {
@@ -50,6 +53,20 @@ class BookingRepositoryImpl @Inject constructor(
                 .document(bookingId)
                 .set(bookingData)
                 .await()
+            
+            // Send notification to service provider
+            try {
+                notificationRepository.sendBookingNotification(
+                    providerId = booking.providerId,
+                    customerName = booking.customerName,
+                    serviceName = booking.serviceName,
+                    bookingId = bookingId
+                )
+                Timber.d("Booking notification sent to provider: ${booking.providerId}")
+            } catch (e: Exception) {
+                Timber.e(e, "Failed to send booking notification, but booking was created")
+                // Don't fail the booking creation if notification fails
+            }
             
             Timber.d("Booking created successfully with ID: $bookingId")
             Result.success(bookingId)
@@ -85,6 +102,20 @@ class BookingRepositoryImpl @Inject constructor(
     
     override suspend fun updateBookingStatus(bookingId: String, status: BookingStatus): Result<Unit> {
         return try {
+            // First get the booking to get customer and service info
+            val bookingDoc = firestore.collection(Constants.COLLECTION_BOOKINGS)
+                .document(bookingId)
+                .get()
+                .await()
+            
+            if (!bookingDoc.exists()) {
+                return Result.failure(Exception("Booking not found"))
+            }
+            
+            val bookingData = bookingDoc.data!!
+            val customerId = bookingData["customerId"] as? String ?: ""
+            val serviceName = bookingData["serviceName"] as? String ?: "Service"
+            
             val updates = mapOf(
                 "status" to status.name,
                 "updatedAt" to System.currentTimeMillis()
@@ -94,6 +125,22 @@ class BookingRepositoryImpl @Inject constructor(
                 .document(bookingId)
                 .update(updates)
                 .await()
+            
+            // Send notification to customer about status update
+            if (customerId.isNotEmpty()) {
+                try {
+                    notificationRepository.sendBookingStatusUpdate(
+                        customerId = customerId,
+                        status = status.name.lowercase().replace("_", " "),
+                        serviceName = serviceName,
+                        bookingId = bookingId
+                    )
+                    Timber.d("Booking status notification sent to customer: $customerId")
+                } catch (e: Exception) {
+                    Timber.e(e, "Failed to send booking status notification")
+                    // Don't fail the status update if notification fails
+                }
+            }
             
             Result.success(Unit)
         } catch (e: Exception) {
@@ -207,15 +254,36 @@ class BookingRepositoryImpl @Inject constructor(
             "customerName" to booking.customerName,
             "serviceName" to booking.serviceName,
             "description" to booking.description,
-            "serviceLatitude" to (booking.serviceLatitude ?: 0.0),
-            "serviceLongitude" to (booking.serviceLongitude ?: 0.0),
-            "serviceAddress" to booking.serviceAddress,
+            "serviceLocation" to mapOf(
+                "address" to booking.serviceLocation.address,
+                "city" to booking.serviceLocation.city,
+                "province" to booking.serviceLocation.province,
+                "country" to booking.serviceLocation.country,
+                "latitude" to booking.serviceLocation.latitude,
+                "longitude" to booking.serviceLocation.longitude,
+                "formattedAddress" to booking.serviceLocation.formattedAddress
+            ),
+            // Keep old fields for backward compatibility
+            "serviceLatitude" to booking.serviceLocation.latitude,
+            "serviceLongitude" to booking.serviceLocation.longitude,
+            "serviceAddress" to booking.serviceLocation.address,
             "scheduledDate" to booking.scheduledDate,
             "scheduledTime" to booking.scheduledTime,
             "estimatedDuration" to booking.estimatedDuration,
             "pricing" to mapOf(
                 "basePrice" to booking.pricing.basePrice,
+                "additionalCharges" to booking.pricing.additionalCharges.map { charge ->
+                    mapOf(
+                        "description" to charge.description,
+                        "amount" to charge.amount,
+                        "isApproved" to charge.isApproved
+                    )
+                },
+                "discount" to booking.pricing.discount,
+                "travelFee" to booking.pricing.travelFee,
+                "tax" to booking.pricing.tax,
                 "totalAmount" to booking.pricing.totalAmount,
+                "paidAmount" to booking.pricing.paidAmount,
                 "paymentStatus" to booking.pricing.paymentStatus.name
             ),
             "status" to booking.status.name,
@@ -224,6 +292,11 @@ class BookingRepositoryImpl @Inject constructor(
             "attachments" to booking.attachments,
             "createdAt" to booking.createdAt,
             "updatedAt" to booking.updatedAt,
+            "acceptedAt" to booking.acceptedAt,
+            "startedAt" to booking.startedAt,
+            "completedAt" to booking.completedAt,
+            "cancelledAt" to booking.cancelledAt,
+            "cancellationReason" to booking.cancellationReason,
             "timeline" to booking.timeline.map { event ->
                 mapOf(
                     "id" to event.id,
@@ -233,11 +306,57 @@ class BookingRepositoryImpl @Inject constructor(
                     "performedBy" to event.performedBy
                 )
             }
-        )
+        ) as Map<String, Any>
     }
     
     private fun mapToBooking(data: Map<String, Any>): Booking {
         try {
+            // Handle service location mapping
+            val serviceLocation = if (data.containsKey("serviceLocation")) {
+                val locationData = data["serviceLocation"] as? Map<String, Any>
+                ServiceLocation(
+                    address = locationData?.get("address") as? String ?: "",
+                    city = locationData?.get("city") as? String ?: "",
+                    province = locationData?.get("province") as? String ?: "",
+                    country = locationData?.get("country") as? String ?: "",
+                    latitude = (locationData?.get("latitude") as? Number)?.toDouble() ?: 0.0,
+                    longitude = (locationData?.get("longitude") as? Number)?.toDouble() ?: 0.0,
+                    formattedAddress = locationData?.get("formattedAddress") as? String ?: ""
+                )
+            } else {
+                // Fallback to old fields for backward compatibility
+                ServiceLocation(
+                    address = data["serviceAddress"] as? String ?: "",
+                    latitude = (data["serviceLatitude"] as? Number)?.toDouble() ?: 0.0,
+                    longitude = (data["serviceLongitude"] as? Number)?.toDouble() ?: 0.0
+                )
+            }
+
+            // Handle pricing mapping
+            val pricingData = data["pricing"] as? Map<String, Any>
+            val pricing = BookingPricing(
+                basePrice = pricingData?.get("basePrice") as? Double ?: 0.0,
+                additionalCharges = (pricingData?.get("additionalCharges") as? List<Map<String, Any>>)?.map { chargeData ->
+                    AdditionalCharge(
+                        description = chargeData["description"] as? String ?: "",
+                        amount = (chargeData["amount"] as? Number)?.toDouble() ?: 0.0,
+                        isApproved = chargeData["isApproved"] as? Boolean ?: false
+                    )
+                } ?: emptyList(),
+                discount = pricingData?.get("discount") as? Double ?: 0.0,
+                travelFee = pricingData?.get("travelFee") as? Double ?: 0.0,
+                tax = pricingData?.get("tax") as? Double ?: 0.0,
+                totalAmount = pricingData?.get("totalAmount") as? Double ?: 0.0,
+                paidAmount = pricingData?.get("paidAmount") as? Double ?: 0.0,
+                paymentStatus = try {
+                    com.sevalk.data.models.PaymentStatus.valueOf(
+                        pricingData?.get("paymentStatus") as? String ?: "PENDING"
+                    )
+                } catch (e: Exception) {
+                    com.sevalk.data.models.PaymentStatus.PENDING
+                }
+            )
+
             return Booking(
                 id = data["id"] as? String ?: "",
                 customerId = data["customerId"] as? String ?: "",
@@ -247,23 +366,11 @@ class BookingRepositoryImpl @Inject constructor(
                 serviceId = data["serviceId"] as? String ?: "",
                 serviceName = data["serviceName"] as? String ?: "",
                 description = data["description"] as? String ?: "",
-                serviceLatitude = (data["serviceLatitude"] as? Number)?.toDouble(),
-                serviceLongitude = (data["serviceLongitude"] as? Number)?.toDouble(),
-                serviceAddress = data["serviceAddress"] as? String ?: "",
+                serviceLocation = serviceLocation,
                 scheduledDate = (data["scheduledDate"] as? Number)?.toLong() ?: 0L,
                 scheduledTime = data["scheduledTime"] as? String ?: "",
-                estimatedDuration = ((data["estimatedDuration"] as? Number)?.toInt() ?: 60).toString(),
-                pricing = BookingPricing(
-                    basePrice = (data["pricing"] as? Map<String, Any>)?.get("basePrice") as? Double ?: 0.0,
-                    totalAmount = (data["pricing"] as? Map<String, Any>)?.get("totalAmount") as? Double ?: 0.0,
-                    paymentStatus = try {
-                        com.sevalk.data.models.PaymentStatus.valueOf(
-                            (data["pricing"] as? Map<String, Any>)?.get("paymentStatus") as? String ?: "PENDING"
-                        )
-                    } catch (e: Exception) {
-                        com.sevalk.data.models.PaymentStatus.PENDING
-                    }
-                ),
+                estimatedDuration = data["estimatedDuration"] as? String ?: "60",
+                pricing = pricing,
                 status = try {
                     BookingStatus.valueOf(data["status"] as? String ?: "PENDING")
                 } catch (e: Exception) {
@@ -280,6 +387,11 @@ class BookingRepositoryImpl @Inject constructor(
                 attachments = (data["attachments"] as? List<String>) ?: emptyList(),
                 createdAt = (data["createdAt"] as? Number)?.toLong() ?: 0L,
                 updatedAt = (data["updatedAt"] as? Number)?.toLong() ?: 0L,
+                acceptedAt = (data["acceptedAt"] as? Number)?.toLong(),
+                startedAt = (data["startedAt"] as? Number)?.toLong(),
+                completedAt = (data["completedAt"] as? Number)?.toLong(),
+                cancelledAt = (data["cancelledAt"] as? Number)?.toLong(),
+                cancellationReason = data["cancellationReason"] as? String ?: "",
                 timeline = (data["timeline"] as? List<Map<String, Any>>)?.map { eventData ->
                     BookingTimelineEvent(
                         id = eventData["id"] as? String ?: UUID.randomUUID().toString(),
@@ -292,7 +404,11 @@ class BookingRepositoryImpl @Inject constructor(
                         description = eventData["description"] as? String ?: "",
                         performedBy = eventData["performedBy"] as? String ?: ""
                     )
-                } ?: emptyList()
+                } ?: emptyList(),
+                // Keep these for backward compatibility - they'll be overridden by serviceLocation
+                serviceLatitude = serviceLocation.latitude,
+                serviceLongitude = serviceLocation.longitude,
+                serviceAddress = serviceLocation.address
             )
         } catch (e: Exception) {
             Timber.e(e, "Error mapping booking data: $data")
@@ -301,12 +417,17 @@ class BookingRepositoryImpl @Inject constructor(
                 id = data["id"] as? String ?: "",
                 customerId = data["customerId"] as? String ?: "",
                 providerId = data["providerId"] as? String ?: "",
-                serviceLatitude = (data["serviceLatitude"] as? Number)?.toDouble(),
-                serviceLongitude = (data["serviceLongitude"] as? Number)?.toDouble(),
-                serviceAddress = data["serviceAddress"] as? String ?: "",
+                serviceLocation = ServiceLocation(
+                    address = data["serviceAddress"] as? String ?: "",
+                    latitude = (data["serviceLatitude"] as? Number)?.toDouble() ?: 0.0,
+                    longitude = (data["serviceLongitude"] as? Number)?.toDouble() ?: 0.0
+                ),
                 status = BookingStatus.PENDING,
                 createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
+                updatedAt = System.currentTimeMillis(),
+                serviceLatitude = (data["serviceLatitude"] as? Number)?.toDouble() ?: 0.0,
+                serviceLongitude = (data["serviceLongitude"] as? Number)?.toDouble() ?: 0.0,
+                serviceAddress = data["serviceAddress"] as? String ?: ""
             )
         }
     }

@@ -4,15 +4,19 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.unit.dp
 import com.sevalk.data.models.Booking
+import com.sevalk.presentation.provider.jobs.components.CompletedJobDetailsBottomSheet
 
 @Composable
 fun DoneJobsSection(
     bookings: List<Booking>,
-    onViewDetails: (String) -> Unit
+    onViewDetails: (String) -> Unit = {}
 ) {
+    var showBottomSheet by remember { mutableStateOf(false) }
+    var selectedBooking by remember { mutableStateOf<Booking?>(null) }
+
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(16.dp),
         contentPadding = PaddingValues(bottom = 16.dp)
@@ -20,8 +24,21 @@ fun DoneJobsSection(
         items(bookings) { booking ->
             CompletedJobCard(
                 booking = booking,
-                onViewDetails = { onViewDetails(booking.id) }
+                onViewDetails = {
+                    selectedBooking = booking
+                    showBottomSheet = true
+                }
             )
         }
+    }
+
+    if (showBottomSheet && selectedBooking != null) {
+        CompletedJobDetailsBottomSheet(
+            booking = selectedBooking,
+            onDismiss = {
+                showBottomSheet = false
+                selectedBooking = null
+            }
+        )
     }
 }

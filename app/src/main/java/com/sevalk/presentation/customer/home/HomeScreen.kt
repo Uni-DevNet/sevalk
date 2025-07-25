@@ -282,12 +282,32 @@ fun HomeScreen(
         if (isLoading) {
             CircularProgressIndicator(color = Color(0xFFFFC107))
         } else if (bookings.isEmpty()) {
-            Text(
-                text = "No bookings found",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Gray
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.EventBusy,
+                    contentDescription = null,
+                    tint = Color(0xFFFFC107),
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "No bookings yet",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Start exploring services and make your first booking!",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
         } else {
             val bookingsToShow = if (showAllBookings) bookings else bookings.take(2)
             bookingsToShow.forEach { booking ->
@@ -344,12 +364,32 @@ fun HomeScreen(
         }
 
         if (filteredProviders.isEmpty()) {
-            Text(
-                text = "No nearby providers found",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = Color.Gray
-            )
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Icon(
+                    imageVector = Icons.Default.LocationOff,
+                    contentDescription = null,
+                    tint = Color(0xFF10B981),
+                    modifier = Modifier.size(48.dp)
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "No providers nearby",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.Gray
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = "Try searching different services or check your location settings.",
+                    fontSize = 14.sp,
+                    color = Color.Gray
+                )
+            }
         } else {
             filteredProviders.forEach { provider ->
                 val distance = currentLocation?.let { current ->

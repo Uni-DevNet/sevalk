@@ -10,6 +10,7 @@ import com.google.firebase.auth.FirebaseUser
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.firestore.FirebaseFirestore
 import com.sevalk.utils.Constants
+import com.sevalk.utils.FCMTokenManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -31,7 +32,8 @@ enum class AuthState {
 class AuthStateManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val firebaseAuth: FirebaseAuth,
-    private val firestore: FirebaseFirestore
+    private val firestore: FirebaseFirestore,
+    private val fcmTokenManager: FCMTokenManager
 ) {
     private val authScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     
@@ -106,6 +108,9 @@ class AuthStateManager @Inject constructor(
         // Mark onboarding as completed when user is authenticated
         markOnboardingCompleted()
         
+        // Initialize FCM token for the user
+        fcmTokenManager.initializeTokenForUser(user.uid)
+        
         // Check if user is a service provider
         firestore.collection(Constants.COLLECTION_USERS)
             .document(user.uid)
@@ -172,8 +177,15 @@ class AuthStateManager @Inject constructor(
     }
 
     fun signOut() {
+        val currentUser = firebaseAuth.currentUser
+        
         // Set user offline before signing out
         setUserOfflineBeforeLogout()
+        
+        // Clear FCM tokens
+        if (currentUser != null) {
+            fcmTokenManager.clearTokensForUser(currentUser.uid)
+        }
         
         firebaseAuth.signOut()
         isProviderMode = false

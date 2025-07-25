@@ -1,16 +1,19 @@
 package com.sevalk.di
 
-
 import com.google.firebase.firestore.FirebaseFirestore
+import com.sevalk.data.api.PaymentApiService
 import com.sevalk.data.repositories.PaymentRepository
-import dagger.Provides
+import com.sevalk.data.repositories.PaymentRepositoryImpl
 import com.sevalk.data.repositories.BookingRepository
 import com.sevalk.data.repositories.BookingRepositoryImpl
 import com.sevalk.data.repositories.UserRepository
 import com.sevalk.data.repositories.UserRepositoryImpl
 import com.sevalk.data.repositories.AuthRepository
+import com.sevalk.data.repositories.NotificationRepository
+import com.sevalk.data.repositories.NotificationRepositoryImpl
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
@@ -31,14 +34,16 @@ abstract class RepositoryModule {
         userRepositoryImpl: UserRepositoryImpl
     ): UserRepository
 
-    companion object {
-        @Provides
-        @Singleton
-        fun providePaymentRepository(
-            firestore: FirebaseFirestore
-        ): PaymentRepository {
-            return PaymentRepository(firestore)
-        }
-    }
+    @Binds
+    @Singleton
+    abstract fun bindNotificationRepository(
+        notificationRepositoryImpl: NotificationRepositoryImpl
+    ): NotificationRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindPaymentRepository(
+        paymentRepositoryImpl: PaymentRepositoryImpl
+    ): PaymentRepository
 }
 
