@@ -123,7 +123,7 @@ fun BookingDetailsScreen(
                 }
 
                 // Add bottom padding for scrollable content
-                Spacer(modifier = Modifier.height(200.dp))
+                Spacer(modifier = Modifier.height(240.dp))
             }
         }
 
@@ -342,7 +342,7 @@ fun ServiceDetailsSection(booking: Booking) {
     ServiceDetailRow(
         "Location", 
         booking.serviceAddress.ifEmpty { 
-            "${booking.serviceLocation.address}" 
+            "${booking.serviceLocation.city} ${booking.serviceLocation.country}"
         }
     )
 }
