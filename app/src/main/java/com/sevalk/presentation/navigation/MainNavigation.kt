@@ -25,10 +25,14 @@ import com.sevalk.presentation.provider.profile.ProviderProfileScreen
 @Composable
 fun MainNavigation(
     navController: NavController,
-    authViewModel: AuthViewModel = hiltViewModel()
+    authViewModel: AuthViewModel = hiltViewModel(),
+    initialTab: String? = null,
 ) {
     val authState by remember { derivedStateOf { authViewModel.authState } }
     val isProviderMode by remember { derivedStateOf { authViewModel.isProviderMode } }
+    var handledInitialTab by remember { mutableStateOf(false) }
+    var customerSelectedTab by remember { mutableStateOf(CustomerNavigationTab.HOME) }
+    var providerSelectedTab by remember { mutableStateOf(ProviderNavigationTab.DASHBOARD) }
 
     // Handle auth state changes
     LaunchedEffect(authState) {
@@ -49,8 +53,23 @@ fun MainNavigation(
         }
     }
 
-    var customerSelectedTab by remember { mutableStateOf(CustomerNavigationTab.HOME) }
-    var providerSelectedTab by remember { mutableStateOf(ProviderNavigationTab.DASHBOARD) }
+    LaunchedEffect(initialTab, authState, isProviderMode) {
+        // Only process if we have an initial tab, haven't handled it yet, and authenticated
+        if (!handledInitialTab && initialTab != null && authState == AuthState.AUTHENTICATED) {
+            when (initialTab.uppercase()) {
+                "MESSAGE" -> {
+                    if (isProviderMode) {
+                        providerSelectedTab = ProviderNavigationTab.MESSAGES
+                    } else {
+                        customerSelectedTab = CustomerNavigationTab.MESSAGES
+                    }
+                    handledInitialTab = true
+                }
+                // Add other cases here if needed
+            }
+        }
+    }
+
     var showCreateBillScreen by remember { mutableStateOf(false) }
     var selectedBookingForBill by remember { mutableStateOf<Booking?>(null) }
     var selectedServiceType by remember { mutableStateOf<com.sevalk.presentation.components.map.ServiceType?>(null) }

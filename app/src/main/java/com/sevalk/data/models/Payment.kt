@@ -22,7 +22,8 @@ data class Payment(
 data class PaymentDetails(
     val cardDetails: CardDetails? = null,
     val bankDetails: BankDetails? = null,
-    val digitalWalletDetails: DigitalWalletDetails? = null
+    val digitalWalletDetails: DigitalWalletDetails? = null,
+    val stripePaymentDetails: StripePaymentDetails? = null
 )
 
 data class CardDetails(
@@ -76,7 +77,7 @@ data class WalletTransaction(
 )
 
 enum class PaymentMethodType {
-    CASH, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, DIGITAL_WALLET, SEVALKA_WALLET
+    CASH, CREDIT_CARD, DEBIT_CARD, BANK_TRANSFER, DIGITAL_WALLET, SEVALKA_WALLET, STRIPE_CARD
 }
 
 enum class RefundStatus {
