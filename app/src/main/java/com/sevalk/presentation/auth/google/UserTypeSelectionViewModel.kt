@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.sevalk.data.models.UserType
 import com.sevalk.data.repositories.AuthRepository
+import com.sevalk.presentation.auth.AuthStateManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class UserTypeSelectionViewModel @Inject constructor(
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val authStateManager: AuthStateManager
 ) : ViewModel() {
     
     private val _uiState = MutableStateFlow(UserTypeSelectionState())
@@ -61,6 +63,7 @@ class UserTypeSelectionViewModel @Inject constructor(
                     result.fold(
                         onSuccess = { 
                             _uiState.update { it.copy(isLoading = false, error = null) }
+                            authStateManager.handleSuccessfulAuthentication() // <-- Mark onboarding completed
                             onNavigateToServiceSelection()
                         },
                         onFailure = { exception ->
@@ -83,6 +86,7 @@ class UserTypeSelectionViewModel @Inject constructor(
                     result.fold(
                         onSuccess = { 
                             _uiState.update { it.copy(isLoading = false, error = null) }
+                            authStateManager.handleSuccessfulAuthentication() // <-- Mark onboarding completed
                             onNavigateToHome()
                         },
                         onFailure = { exception ->

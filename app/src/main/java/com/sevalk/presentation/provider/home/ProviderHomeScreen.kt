@@ -44,6 +44,7 @@ import java.util.Date
 import androidx.compose.material3.pulltorefresh.PullToRefreshContainer
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import com.sevalk.presentation.components.common.PrimaryButtonStyle
 
 data class Job(
     val title: String,
@@ -249,9 +250,8 @@ fun ProviderHomeScreen(
                        onSwitchToCustomer?.invoke()
                     },
                     modifier = Modifier.weight(1f),
-                    style = if (selectedTab == 0) com.sevalk.presentation.components.common.PrimaryButtonStyle.TEXT else com.sevalk.presentation.components.common.PrimaryButtonStyle.OUTLINE,
-                    backgroundColor = if (selectedTab == 0) Color(0xFFFFC107) else Color.Gray.copy(alpha = 0.2f),
-                    foregroundColor = if (selectedTab == 0) Color.Black else Color.Gray.copy(alpha = 0.2f)
+                    style = PrimaryButtonStyle.OUTLINE,
+                    backgroundColor = Color.Gray.copy(alpha = 0.4f),
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 com.sevalk.presentation.components.common.PrimaryButton(

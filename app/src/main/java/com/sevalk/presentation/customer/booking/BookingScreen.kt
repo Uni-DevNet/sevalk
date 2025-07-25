@@ -47,6 +47,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.maps.model.BitmapDescriptorFactory
+import com.sevalk.presentation.components.CustomerAvatar
 import timber.log.Timber
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -222,19 +223,11 @@ fun BookingScreen(
                                 .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Box {
-                                Icon(
-                                    Icons.Default.Person,
-                                    contentDescription = "Profile",
-                                    modifier = Modifier.size(50.dp),
-                                )
-                                Box(
-                                    modifier = Modifier
-                                        .size(12.dp)
-                                        .background(Color.Green, CircleShape)
-                                        .align(Alignment.BottomEnd)
-                                )
-                            }
+                            CustomerAvatar(
+                                customerId = provider.id,
+                                size = 50.dp,
+                                modifier = Modifier.clip(CircleShape).background(Color.LightGray) // Placeholder for avatar
+                            )
                             
                             Spacer(modifier = Modifier.width(12.dp))
                             
