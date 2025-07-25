@@ -11,7 +11,19 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.filled.Build
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.HelpOutline
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Payments
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.CalendarToday
+import androidx.navigation.NavOptions
+import com.sevalk.presentation.navigation.Screen
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -55,10 +67,6 @@ fun ProviderProfileScreen(
     navController: NavController,
     viewModel: ProviderProfileViewModel = hiltViewModel(),
     onLogoutClick: () -> Unit,
-    onServicesClick: () -> Unit,
-    onPaymentMethodsClick: () -> Unit,
-    onPrivacySecurityClick: () -> Unit,
-    onHelpSupportClick: () -> Unit,
     onSwitchToCustomerClick: () -> Unit
 ) {
     val providerProfile by viewModel.providerProfile.collectAsState()
@@ -319,31 +327,39 @@ fun ProviderProfileScreen(
                     ) {
                         Column {
                             NavigationItem(
-                                icon = R.drawable.wrench,
+                                icon = Icons.Default.Build,
                                 label = "My Services",
                                 description = "Manage service offerings",
-                                onClick = onServicesClick
+                                onClick = {
+                                    navController.navigate(Screen.MyServices.route)
+                                }
                             )
-                            Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
                             NavigationItem(
-                                icon = R.drawable.credit_card,
+                                icon = Icons.Default.Payments,
                                 label = "Payment Methods",
                                 description = "Manage costs & payments",
-                                onClick = onPaymentMethodsClick
+                                onClick = {
+                                    navController.navigate(Screen.PaymentMethods.route)
+                                }
                             )
-                            Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
                             NavigationItem(
-                                icon = R.drawable.shield,
+                                icon = Icons.Default.Lock,
                                 label = "Privacy & Security",
                                 description = "Account personnel",
-                                onClick = onPrivacySecurityClick
+                                onClick = {
+                                    navController.navigate(Screen.PrivacySecurity.route)
+                                }
                             )
-                            Divider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
+                            HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
                             NavigationItem(
-                                icon = R.drawable.circle_help,
+                                icon = Icons.Default.HelpOutline,
                                 label = "Help & Support",
                                 description = "Get assistance",
-                                onClick = onHelpSupportClick
+                                onClick = {
+                                    navController.navigate(Screen.HelpSupport.route)
+                                }
                             )
                         }
                     }
@@ -476,7 +492,7 @@ fun ContactInfoItem(icon: ImageVector, label: String, value: String) {
 }
 
 @Composable
-fun NavigationItem(icon: Int, label: String, description: String, onClick: () -> Unit) {
+fun NavigationItem(icon: ImageVector, label: String, description: String, onClick: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -485,7 +501,7 @@ fun NavigationItem(icon: Int, label: String, description: String, onClick: () ->
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(
-            painter = painterResource(id = icon),
+            imageVector = icon,
             contentDescription = label,
             tint = Color.Gray,
             modifier = Modifier.size(24.dp)
@@ -537,10 +553,6 @@ fun ProviderProfileScreenPreview() {
         ProviderProfileScreen(
             navController = rememberNavController(),
             onLogoutClick = {},
-            onServicesClick = {},
-            onPaymentMethodsClick = {},
-            onPrivacySecurityClick = {},
-            onHelpSupportClick = {},
             onSwitchToCustomerClick = {}
         )
     }

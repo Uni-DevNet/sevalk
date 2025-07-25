@@ -306,28 +306,28 @@ fun CustomerProfileScreen(
                             icon = Icons.Default.FavoriteBorder,
                             label = "Favorites",
                             description = "Your saved services",
-                            onClick = onFavoritesClick
+                            onClick = { navController.navigate(Screen.Favorites.route) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
                         NavigationItem(
                             icon = Icons.Default.Payments,
                             label = "Payment Methods",
                             description = "Manage cards & payments",
-                            onClick = onPaymentMethodsClick
+                            onClick = { navController.navigate(Screen.PaymentMethods.route) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
                         NavigationItem(
                             icon = Icons.Default.Lock,
                             label = "Privacy & Security",
                             description = "Account protection",
-                            onClick = onPrivacySecurityClick
+                            onClick = { navController.navigate(Screen.PrivacySecurity.route) }
                         )
                         HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), thickness = 1.dp)
                         NavigationItem(
                             icon = Icons.Default.HelpOutline,
                             label = "Help & Support",
                             description = "Get assistance",
-                            onClick = onHelpSupportClick
+                            onClick = { navController.navigate(Screen.HelpSupport.route) }
                         )
                     }
                 }
