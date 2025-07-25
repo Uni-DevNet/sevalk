@@ -1,6 +1,7 @@
 package com.sevalk.presentation.navigation
 
 sealed class Screen(val route: String) {
+    // Auth Screens
     object Splash : Screen("splash")
     object Onboarding : Screen("onboarding")
     object Login : Screen("login")
@@ -9,9 +10,20 @@ sealed class Screen(val route: String) {
         fun createRoute(email: String, name: String) = "user_type_selection/$email/$name"
     }
     object Welcome : Screen("welcome")
+    
+    // Main Screens
     object Home : Screen("home")
     object CustomerHome : Screen("CustomerHome")
     object ServiceList : Screen("service_list")
+    
+    // Settings Screens
+    object Favorites : Screen("favorites")
+    object PaymentMethods : Screen("payment_methods")
+    object PrivacySecurity : Screen("privacy_security")
+    object HelpSupport : Screen("help_support")
+    
+    // Provider Settings Screens
+    object MyServices : Screen("my_services")
     object Booking : Screen("booking/{providerId}/{providerName}/{rating}/{serviceType}") {
         fun createRoute(providerId: String, providerName: String, rating: Float, serviceType: String) =
             "booking/$providerId/$providerName/$rating/$serviceType"

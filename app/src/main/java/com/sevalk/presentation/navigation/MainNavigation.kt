@@ -212,15 +212,9 @@ fun MainNavigation(
                             onLogoutClick = {
                                 authViewModel.signOut()
                             },
-                            onServicesClick = {
-                                navController.navigate("provider/services")
-                            },
-                            onPaymentMethodsClick = {
-                                navController.navigate("provider/payments")
-                            },
-                            onPrivacySecurityClick = {},
-                            onHelpSupportClick = {},
-                            onSwitchToCustomerClick = switchToCustomerMode
+                            onSwitchToCustomerClick = {
+                                authViewModel.updateProviderMode(false)
+                            }
                         )
                     }
                 }

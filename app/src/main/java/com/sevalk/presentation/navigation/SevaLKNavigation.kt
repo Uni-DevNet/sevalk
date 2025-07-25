@@ -30,6 +30,11 @@ import com.sevalk.presentation.provider.service.ServiceSelectionScreen
 import com.sevalk.presentation.customer.payment.StripePaymentScreen
 import com.sevalk.presentation.customer.payment.PaymentSuccessScreen
 import com.sevalk.presentation.splash.SplashScreen
+import com.sevalk.presentation.customer.settings.FavoritesScreen
+import com.sevalk.presentation.customer.settings.PaymentMethodsScreen
+import com.sevalk.presentation.customer.settings.PrivacySecurityScreen
+import com.sevalk.presentation.customer.settings.HelpSupportScreen
+import com.sevalk.presentation.provider.services.MyServicesScreen
 
 @Composable
 fun SevaLKNavigation(
@@ -227,16 +232,34 @@ fun SevaLKNavigation(
                 navController = navController
             )
         }
+
+        // Customer Settings Screens
+        composable(Screen.Favorites.route) {
+            FavoritesScreen(navController = navController)
+        }
+
+        composable(Screen.PaymentMethods.route) {
+            PaymentMethodsScreen(navController = navController)
+        }
+
+        composable(Screen.PrivacySecurity.route) {
+            PrivacySecurityScreen(navController = navController)
+        }
+
+        composable(Screen.HelpSupport.route) {
+            HelpSupportScreen(navController = navController)
+        }
+
+        // Provider Settings Screens
+        composable(Screen.MyServices.route) {
+            MyServicesScreen(navController = navController)
+        }
         
         composable(Screen.ProviderProfile.route) {
             ProviderProfileScreen(
-                onLogoutClick = {},
-                onServicesClick = {},
-                onPaymentMethodsClick = {},
-                onPrivacySecurityClick = {},
-                onHelpSupportClick = {},
                 navController = navController,
-                onSwitchToCustomerClick = {}
+                onLogoutClick = {},
+                onSwitchToCustomerClick = { navController.navigate(Screen.CustomerHome.route) }
             )
         }
         
