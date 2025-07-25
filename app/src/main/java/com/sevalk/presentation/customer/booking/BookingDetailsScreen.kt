@@ -428,7 +428,7 @@ fun PaymentButton(bookingId: String, navController: NavController) {
     // Proceed to Payment Button
     Button(
         onClick = { 
-            navController.navigate("payment/$bookingId")
+            navController.navigate("stripe_payment/$bookingId")
         },
         modifier = Modifier
             .fillMaxWidth()
@@ -437,7 +437,7 @@ fun PaymentButton(bookingId: String, navController: NavController) {
         colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFC107))
     ) {
         Icon(
-            painter = painterResource(id = R.drawable.message_circle), // Use credit card icon
+            painter = painterResource(id = R.drawable.dollar_sign), // Use dollar sign icon
             contentDescription = null,
             tint = Color.Black,
             modifier = Modifier.size(20.dp)
