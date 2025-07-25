@@ -128,7 +128,7 @@ fun CompletedJobCard(
                 }
                 
                 Text(
-                    text = "📍 ${booking.toJobDistance()}",
+                    text = "📍 ${booking.serviceLocation.city}",
                     fontSize = 12.sp,
                     color = Color.Gray
                 )

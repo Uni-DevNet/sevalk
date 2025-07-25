@@ -24,6 +24,7 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Divider
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
@@ -164,7 +165,7 @@ fun RegistrationScreen(
                     .background(Color.Black.copy(alpha = 0.5f)), // Semi-transparent background
                 contentAlignment = Alignment.Center
             ) {
-                androidx.compose.material3.CircularProgressIndicator(
+                CircularProgressIndicator(
                     color = Color.White
                 )
             }
@@ -290,7 +291,7 @@ fun Step2VerifyEmail(
     
     Column {
         Text(
-            text = "We've sent a verification email to ${uiState.email}. Please check your inbox (and spam folder) and click the verification link or enter the code below.",
+            text = "We've sent a verification code to ${uiState.email}. Please check your inbox (and spam folder) and click the verification link or enter the code below.",
             textAlign = TextAlign.Justify,
             color = Color.Black
         )
@@ -500,16 +501,15 @@ fun Step3AlmostThere(
     }
 }
 
-
-//@Preview
-//@Composable
-//fun RegistrationScreenPreview() {
-//    SevaLKTheme {
-//        // We'll provide a dummy implementation for preview
-//        val previewViewModel = object : RegistrationViewModel() {
-//            // Empty implementation that doesn't use Hilt for preview purposes
-//        }
-//        // Pass the preview view model directly to avoid Hilt in preview
-//        RegistrationScreen(viewModel = previewViewModel)
-//    }
-//}
+@Preview
+@Composable
+fun RegistrationScreenPreview() {
+    SevaLKTheme {
+        Step2VerifyEmail(
+            uiState = RegistrationState(
+                email = "bimsaraudara25@gmail.com"
+            ),
+            onEvent = {}
+        )
+}
+}

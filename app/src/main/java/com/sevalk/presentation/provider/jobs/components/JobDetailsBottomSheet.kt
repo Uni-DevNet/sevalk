@@ -30,6 +30,7 @@ import com.sevalk.data.models.toJobDistance
 import com.sevalk.data.models.toJobTime
 import com.sevalk.data.models.toJobTimeAgo
 import com.sevalk.data.models.toJobTitle
+import com.sevalk.presentation.components.CustomerAvatar
 import com.sevalk.ui.theme.S_YELLOW
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -88,11 +89,9 @@ fun JobDetailsSheetContent(
             verticalAlignment = Alignment.CenterVertically
         ) {
             // Customer avatar
-            Box(
-                modifier = Modifier
-                    .size(60.dp)
-                    .clip(RoundedCornerShape(30.dp))
-                    .background(Color.Gray.copy(alpha = 0.2f))
+            CustomerAvatar(
+                customerId = booking.customerId,
+                size = 60.dp
             )
             
             Spacer(modifier = Modifier.width(16.dp))

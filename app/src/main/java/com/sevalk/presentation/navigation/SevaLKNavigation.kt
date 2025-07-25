@@ -243,7 +243,8 @@ fun SevaLKNavigation(
         // Shared Screens
         composable(Screen.Chat.route) {
             MainNavigation(
-                navController = navController
+                navController = navController,
+                initialTab = "MESSAGE"
             )
         }
 
@@ -310,6 +311,4 @@ fun SevaLKNavigation(
             )
         }
     }
-
-
 }
