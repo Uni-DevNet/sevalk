@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("kotlin-parcelize") // Add this line
     id("com.google.dagger.hilt.android")
     kotlin("kapt")
     alias(libs.plugins.google.gms.google.services)
@@ -45,13 +46,13 @@ android {
         }
 
     }
-    
+
     // Add packaging options to handle duplicate files from email libraries
     packaging {
         resources {
             excludes += listOf(
-                "META-INF/LICENSE.md", 
-                "META-INF/LICENSE-notice.md", 
+                "META-INF/LICENSE.md",
+                "META-INF/LICENSE-notice.md",
                 "META-INF/NOTICE.md",
                 "META-INF/DEPENDENCIES",
                 "META-INF/ASL2.0",
@@ -60,7 +61,7 @@ android {
             )
         }
     }
-    
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
@@ -101,13 +102,13 @@ dependencies {
     // Splash Screen API
     implementation("androidx.core:core-splashscreen:1.0.0")
 
-    
+
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.2.0")
 
     // Core library desugaring (for proper thread handling)
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
-    
+
     // Email sending dependencies
     implementation("com.sun.mail:android-mail:1.6.7")
     implementation("com.sun.mail:android-activation:1.6.7")
@@ -116,7 +117,7 @@ dependencies {
 
     // Change status bar color
     implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
-    
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
@@ -150,11 +151,11 @@ dependencies {
     // Coil for AsyncImage
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("com.google.firebase:firebase-messaging-ktx:23.4.0")
-    
+
     // Stripe Android SDK
     implementation("com.stripe:stripe-android:21.21.0")
     implementation("com.stripe:financial-connections:21.21.0")
-    
+
     // Retrofit for API calls
     implementation("com.squareup.retrofit2:retrofit:2.9.0")
     implementation("com.squareup.retrofit2:converter-gson:2.9.0")

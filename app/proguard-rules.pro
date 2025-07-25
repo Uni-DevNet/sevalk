@@ -20,6 +20,20 @@
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
 
+# Kotlin Parcelize - Fix for Stripe SDK
+-keep class kotlinx.parcelize.** { *; }
+-dontwarn kotlinx.parcelize.**
+-keepclassmembers class * implements android.os.Parcelable {
+    public static final ** CREATOR;
+}
+
+# Stripe SDK
+-keep class com.stripe.** { *; }
+-dontwarn com.stripe.**
+-keepclassmembers class com.stripe.** {
+    *;
+}
+
 # Firebase Messaging
 -keep class com.google.firebase.messaging.** { *; }
 -keep class com.google.firebase.iid.** { *; }
