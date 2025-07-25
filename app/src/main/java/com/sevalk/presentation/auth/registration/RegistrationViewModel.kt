@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.sevalk.data.models.UserType
 import com.sevalk.data.repositories.AuthRepository
+import com.sevalk.presentation.auth.AuthStateManager
 import com.sevalk.utils.GoogleSignInHelper
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -22,6 +23,7 @@ import javax.inject.Inject
 @HiltViewModel
 open class RegistrationViewModel @Inject constructor(
     private val authRepository: AuthRepository,
+    private val authStateManager: AuthStateManager,
     @ApplicationContext private val context: Context
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(RegistrationState())
@@ -189,6 +191,7 @@ open class RegistrationViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { 
                         _uiState.update { it.copy(isLoading = false, error = null) }
+                        authStateManager.handleSuccessfulAuthentication()
                         onNavigateToServiceSelection?.invoke()
                     },
                     onFailure = { exception ->
@@ -230,6 +233,7 @@ open class RegistrationViewModel @Inject constructor(
                 result.fold(
                     onSuccess = { 
                         _uiState.update { it.copy(isLoading = false, error = null) }
+                        authStateManager.handleSuccessfulAuthentication()
                         onNavigateToHome?.invoke()
                     },
                     onFailure = { exception ->

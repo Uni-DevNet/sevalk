@@ -52,7 +52,7 @@ class PaymentRepositoryImpl @Inject constructor(
                 customerId = customerId,
                 providerId = providerId
             )
-            
+            System.out.println("Inside createPaymentIntent:")
             val response = paymentApiService.createPaymentIntent(request)
             
             if (response.isSuccessful && response.body() != null) {
@@ -64,6 +64,7 @@ class PaymentRepositoryImpl @Inject constructor(
                 Result.failure(Exception(errorMsg))
             }
         } catch (e: Exception) {
+            System.out.println("SevaLK EXCEPTION: ${e.javaClass.simpleName} - ${e.message}")
             Timber.e(e, "Error creating payment intent")
             Result.failure(e)
         }

@@ -122,7 +122,9 @@ class ChatRepositoryImpl @Inject constructor(
                 for (chatSnapshot in snapshot.children) {
                     val chatId = chatSnapshot.key ?: continue
                     val participants = chatSnapshot.child("participants")
-                    
+
+                    val currentUserExists = participants.hasChild(currentUserId)
+                    if (!currentUserExists) continue
                     // Check if current user is a participant
                     var participantId: String? = null
                     for (participantSnapshot in participants.children) {
